@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Promedio Ponderado</title>
+  <style> 
+    body.theme-light #bg-wrap {
+  opacity: 1;
+body.theme-light {
+  
+  --result-panel-bg: #1b1b1b;
+  --needed-panel-bg: #ffb347;
+    --result-panel-text: #111;
+  --needed-panel-text: #111;
+   --input-text: #111;
+}
+
+}
+
+}
+body.theme-dark #bg-wrap-dark {
+  opacity: 1;
+  --result-panel-bg: #1b1b1b;
+  --needed-panel-bg: #ffb347;
+  --result-panel-text: #fff;
+  --needed-panel-text: #fff;
+    --input-text: #fff;
+}
+body.theme-rosa #bg-wrap-rosa {
+  opacity: 1;
+   --result-panel-bg: #fff0f7;
+  --needed-panel-bg: #ff90c2;
+    --result-panel-text: #111;
+  --needed-panel-text: #111;
+    --input-text: #111;
+
+}
+body.theme-oscuro #bg-wrap-oscuro {
+  opacity: 1;
+   --result-panel-bg: #212227;
+  --needed-panel-bg: #292a2f;
+  --result-panel-text: #fff;
+  --needed-panel-text: #fff;
+    --input-text: #fff;
+}
+#bg-wrap,
+#bg-wrap-dark,
+#bg-wrap-rosa,
+#bg-wrap-oscuro {
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+       body.theme-oscuro {
+  --bg-gradient: linear-gradient(45deg, #141517, #222327, #232427, #0a0a11);
+  --card-bg: rgba(24, 24, 32, 0.96);
+  --input-grade: #2c2f3b;
+  --input-weight: #232736;
+  --btn-calc: #222538;
+  --btn-add: #292d40;
+  --btn-remove: #3a233a;
+  --btn-reset: #333645;
+  --text-light: #fafaff;
+}
+
+#bg-wrap,
+#bg-wrap-dark {
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+    body.theme-light #bg-wrap {
+  opacity: 1;
+}
+#bg-wrap {
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+    :root {
+      --bg-gradient: linear-gradient(45deg, #2d002d, #400040, #550055, #330033);
+      --card-bg: rgba(255, 255, 255, 0.1);
+      --input-grade: rgba(255, 215, 0, 0.8);
+      --input-weight: rgba(50, 205, 50, 0.8);
+      --btn-calc: #ff4b5c;
+      --btn-add: #4fbcff;
+      --btn-remove: #ff7b72;
+      --btn-reset: #f9e79f;
+      --text-light: #ecf0f3;
+      --shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      --radius: 20px;
+      --transition: 0.3s ease;
+      font-family: 'Poppins', sans-serif;
+    }
+    body.theme-light {
+  --bg-gradient: linear-gradient(45deg, #f7f8fa, #e3e3ee, #fff7e6, #f1f5fb);
+  --card-bg: rgba(255,255,255,0.92);
+  --input-grade: rgba(255, 247, 128, 0.7);
+  --input-weight: rgba(192, 255, 192, 0.7);
+  --btn-calc: #464646;
+  --btn-add: #4fbcff;
+  --btn-remove: #ff7b72;
+  --btn-reset: #f9e79f;
+  --text-light: #222;
+}
+    body.theme-rosa {
+  --bg-gradient: linear-gradient(135deg, #ffd6f5, #ffb6e6, #ff99cc, #ffe6fa);
+  --card-bg: #fff0f7;
+  --input-grade: #ffdde8;
+  --input-weight: #ffe6fa;
+  --btn-calc: #e75480;
+  --btn-add: #ff8fcf;
+  --btn-remove: #ffb6b6;
+  --btn-reset: #ffe7fa;
+  --text-light: #9e1455;
+}
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      background: var(--bg-gradient);
+      background-size: 200% 200%;
+      animation: gradientBG 10s ease infinite;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; color: var(--text-light);
+      overflow: auto; /* Allow scrolling if content overflows */
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .container {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px; width: 380px;
+      animation: float 6s var(--transition) infinite;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.8rem; font-weight: 600;
+      letter-spacing: 1px; margin: 0;
+    }
+    body.theme-light #tplName::placeholder {
+  color: #5a5ad1;  /* Cambia este color por el que prefieras */
+  opacity: 1;
+}
+    body.theme-rosa #tplName::placeholder {
+  color: #5a5ad1;   /* Puedes cambiar este color a cualquier rosa, fucsia, etc. */
+  opacity: 1;
+}
+
+    .template-controls {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .template-controls input,
+    .template-controls select,
+    .template-controls button {
+      width: 100%; padding: 12px;
+      border: none; border-radius: var(--radius);
+      background: rgba(255,255,255,0.2);
+      color: var(--text-light); font-size: 0.9rem;
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.2);
+      transition: background var(--transition), transform var(--transition);
+      text-align: center;
+    }
+    /* Placeholder color for Nombre plantilla */
+    #tplName::placeholder {
+      color: #eeee31;
+      opacity: 1;
+    }
+    /* Center dropdown text */
+    .template-controls select {
+      text-align: center;
+      text-align-last: center;
+    }
+    .template-controls button:hover,
+    .template-controls select:hover,
+    .template-controls input:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+    .main { display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%; }
+    .controls {display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 8px;
+    }
+    .controls button {
+      width: 50px; height: 50px;
+      border-radius: 50%; border: none;
+      font-size: 1.4rem; font-weight: bold;
+      color: var(--text-light);
+      box-shadow: var(--shadow);
+      background: var(--btn-add);
+      transition: background var(--transition), transform var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .controls .btn-add { background: var(--btn-add); }
+    .controls .btn-remove { background: var(--btn-remove); }
+    .controls .btn-reset { background: var(--btn-reset); }
+    .controls button:hover { transform: scale(1.1); }
+    .rows-wrapper {  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%; }
+    .labels {
+      display: flex; justify-content: space-between;
+      font-weight: 500; opacity: 0.9;
+      padding: 0 8px;
+    }
+    #rows-container {
+      display: flex; flex-direction: column; gap: 12px;
+      max-height: 240px; overflow-y: auto;
+    }
+    .row {
+      display: flex; gap: 12px;
+      animation: fadeIn 0.4s var(--transition);
+    }
+   .row input {
+  flex: 1; padding: 12px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--input-grade);
+  font-size: 1rem; 
+  color: var(--input-text);
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.2);
+  transition: background var(--transition);
+}
+
+    .row input.weight { background: var(--input-weight); }
+    .row input:focus { background: rgba(255,255,255,0.4); }
+    .percent {
+      display: flex; align-items: center;
+      font-size: 1rem; opacity: 0.8;
+      padding: 0 8px;
+    }
+    #calcBtn {
+      width: 100%; padding: 16px;
+      border-radius: var(--radius); border: none;
+      background: var(--btn-calc);
+      color: #fff; font-size: 1.1rem;
+      box-shadow: var(--shadow);
+      transition: transform var(--transition), background var(--transition);
+    }
+    #calcBtn:hover { transform: scale(1.03); background: #ff6f79; }
+    .result-panel {
+  margin-top: 16px;
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  background: var(--result-panel-bg) !important;
+  }
+
+    .result-panel.red { background: #f56565; }
+    .result-panel.blue { background: #3b82f6; }
+    .result-panel div {
+  margin: 8px 0;
+  color: var(--result-panel-text);
+}
+    #result-title { font-size: 1rem; font-weight: 600; }
+    #result-value { font-size: 2.4rem; font-weight: bold; }
+    #result-status { font-size: 1rem; }
+    @media (max-width: 480px) {
+      .container { width: 90%; padding: 16px; }
+      .main { flex-direction: column; }
+      .controls { flex-direction: row; justify-content: space-around; }
+      .controls button { width: 40px; height: 40px; }
+    }
+      /* Animated purple gradient BG */
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    #theme-menu {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  display: flex;
+  gap: 10px;
+}
+.theme-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.4rem;
+  background: rgba(255,255,255,0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.18s;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.theme-btn:hover, .theme-btn.active {
+  background: rgba(255,255,255,0.5);
+  transform: scale(1.13);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+.theme-btn[data-theme="theme-dark"] { color: #ae81ff; }
+.theme-btn[data-theme="theme-light"] { color: #ffe250; }
+.theme-btn[data-theme="theme-rosa"] { color: #e75480; }
+.theme-btn[data-theme="theme-oscuro"] { color: #afb6bb; }
+@media (max-width: 480px) {
+  #theme-menu {
+    top: 8px;
+    right: 8px;
+  }
+  .theme-btn { width: 30px; height: 30px; font-size: 1.08rem;}
+}
+
+  </style>
+</head>
+<body>
+  <div id="bg-wrap" style="position:fixed;z-index:0;top:0;left:0;width:100vw;height:100vh;pointer-events:none;opacity:0;transition:opacity 0.6s;">
+  <!-- Tu SVG aquí -->
+  <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100vw;height:100vh;display:block;">
+    <defs>
+      <radialGradient id="Gradient1" cx="50%" cy="50%" fx="0.441602%" fy="50%" r=".5">
+        <animate attributeName="fx" dur="34s" values="0%;3%;0%" repeatCount="indefinite"></animate>
+        <stop offset="0%" stop-color="rgba(255, 0, 255, 1)"></stop>
+        <stop offset="100%" stop-color="rgba(255, 0, 255, 0)"></stop>
+      </radialGradient>
+      <radialGradient id="Gradient2" cx="50%" cy="50%" fx="2.68147%" fy="50%" r=".5">
+        <animate attributeName="fx" dur="23.5s" values="0%;3%;0%" repeatCount="indefinite"></animate>
+        <stop offset="0%" stop-color="rgba(255, 255, 0, 1)"></stop>
+        <stop offset="100%" stop-color="rgba(255, 255, 0, 0)"></stop>
+      </radialGradient>
+      <radialGradient id="Gradient3" cx="50%" cy="50%" fx="0.836536%" fy="50%" r=".5">
+        <animate attributeName="fx" dur="21.5s" values="0%;3%;0%" repeatCount="indefinite"></animate>
+        <stop offset="0%" stop-color="rgba(0, 255, 255, 1)"></stop>
+        <stop offset="100%" stop-color="rgba(0, 255, 255, 0)"></stop>
+      </radialGradient>
+    </defs>
+    <rect x="13.744%" y="1.18473%" width="100%" height="100%" fill="url(#Gradient1)" transform="rotate(334.41 50 50)">
+      <animate attributeName="x" dur="20s" values="25%;0%;25%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="21s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="7s" repeatCount="indefinite"></animateTransform>
+    </rect>
+    <rect x="-2.17916%" y="35.4267%" width="100%" height="100%" fill="url(#Gradient2)" transform="rotate(255.072 50 50)">
+      <animate attributeName="x" dur="23s" values="-25%;0%;-25%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="24s" values="0%;50%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="12s" repeatCount="indefinite"></animateTransform>
+    </rect>
+    <rect x="9.00483%" y="14.5733%" width="100%" height="100%" fill="url(#Gradient3)" transform="rotate(139.903 50 50)">
+      <animate attributeName="x" dur="25s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="12s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="9s" repeatCount="indefinite"></animateTransform>
+    </rect>
+  </svg>
+</div>
+  <div id="bg-wrap-dark" style="position:fixed;z-index:0;top:0;left:0;width:100vw;height:100vh;pointer-events:none;opacity:0;transition:opacity 0.6s;">
+  <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100vw;height:100vh;display:block;">
+    <defs>
+      <radialGradient id="DarkGradient1" cx="50%" cy="50%" fx="0.441602%" fy="50%" r=".5">
+        <animate attributeName="fx" dur="34s" values="0%;3%;0%" repeatCount="indefinite"></animate>
+        <stop offset="0%" stop-color="rgba(125, 0, 255, 1)"></stop>
+        <stop offset="100%" stop-color="rgba(125, 0, 255, 0)"></stop>
+      </radialGradient>
+      <radialGradient id="DarkGradient2" cx="50%" cy="50%" fx="2.68147%" fy="50%" r=".5">
+        <animate attributeName="fx" dur="23.5s" values="0%;3%;0%" repeatCount="indefinite"></animate>
+        <stop offset="0%" stop-color="rgba(0, 255, 255, 0.7)"></stop>
+        <stop offset="100%" stop-color="rgba(0, 255, 255, 0)"></stop>
+      </radialGradient>
+      <radialGradient id="DarkGradient3" cx="50%" cy="50%" fx="0.836536%" fy="50%" r=".5">
+        <animate attributeName="fx" dur="21.5s" values="0%;3%;0%" repeatCount="indefinite"></animate>
+        <stop offset="0%" stop-color="rgba(255, 80, 220, 0.8)"></stop>
+        <stop offset="100%" stop-color="rgba(255, 80, 220, 0)"></stop>
+      </radialGradient>
+    </defs>
+    <rect x="13.744%" y="1.18473%" width="100%" height="100%" fill="url(#DarkGradient1)" transform="rotate(334.41 50 50)">
+      <animate attributeName="x" dur="20s" values="25%;0%;25%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="21s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="7s" repeatCount="indefinite"></animateTransform>
+    </rect>
+    <rect x="-2.17916%" y="35.4267%" width="100%" height="100%" fill="url(#DarkGradient2)" transform="rotate(255.072 50 50)">
+      <animate attributeName="x" dur="23s" values="-25%;0%;-25%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="24s" values="0%;50%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="12s" repeatCount="indefinite"></animateTransform>
+    </rect>
+    <rect x="9.00483%" y="14.5733%" width="100%" height="100%" fill="url(#DarkGradient3)" transform="rotate(139.903 50 50)">
+      <animate attributeName="x" dur="25s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="12s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="9s" repeatCount="indefinite"></animateTransform>
+    </rect>
+  </svg>
+</div>
+  <div id="bg-wrap-rosa" style="position:fixed;z-index:0;top:0;left:0;width:100vw;height:100vh;pointer-events:none;opacity:0;transition:opacity 0.6s;">
+  <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100vw;height:100vh;display:block;">
+    <defs>
+      <radialGradient id="RosaGradient1" ...>
+  <stop offset="0%" stop-color="#fe67d2"></stop>
+  <stop offset="100%" stop-color="#fe67d200"></stop>
+</radialGradient>
+<radialGradient id="RosaGradient2" ...>
+  <stop offset="0%" stop-color="#ffc6ec"></stop>
+  <stop offset="100%" stop-color="#ffc6ec00"></stop>
+</radialGradient>
+<radialGradient id="RosaGradient3" ...>
+  <stop offset="0%" stop-color="#fff7b2"></stop>
+  <stop offset="100%" stop-color="#fff7b200"></stop>
+</radialGradient>
+    </defs>
+    <rect x="13.744%" y="1.18473%" width="100%" height="100%" fill="url(#RosaGradient1)" transform="rotate(334.41 50 50)">
+      <animate attributeName="x" dur="20s" values="25%;0%;25%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="21s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="7s" repeatCount="indefinite"></animateTransform>
+    </rect>
+    <rect x="-2.17916%" y="35.4267%" width="100%" height="100%" fill="url(#RosaGradient2)" transform="rotate(255.072 50 50)">
+      <animate attributeName="x" dur="23s" values="-25%;0%;-25%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="24s" values="0%;50%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="12s" repeatCount="indefinite"></animateTransform>
+    </rect>
+    <rect x="9.00483%" y="14.5733%" width="100%" height="100%" fill="url(#RosaGradient3)" transform="rotate(139.903 50 50)">
+      <animate attributeName="x" dur="25s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animate attributeName="y" dur="12s" values="0%;25%;0%" repeatCount="indefinite"></animate>
+      <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="9s" repeatCount="indefinite"></animateTransform>
+    </rect>
+  </svg>
+</div>
+
+  <div id="bg-wrap-oscuro" style="position:fixed;z-index:0;top:0;left:0;width:100vw;height:100vh;pointer-events:none;opacity:0;transition:opacity 0.6s;">
+  <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100vw;height:100vh;display:block;">
+    <defs>
+      <radialGradient id="OscuroGradient1" cx="50%" cy="50%" r=".5">
+        <stop offset="0%" stop-color="#222d46"></stop>
+        <stop offset="100%" stop-color="#222d4600"></stop>
+      </radialGradient>
+      <radialGradient id="OscuroGradient2" cx="50%" cy="50%" r=".5">
+        <stop offset="0%" stop-color="#232736"></stop>
+        <stop offset="100%" stop-color="#23273600"></stop>
+      </radialGradient>
+      <radialGradient id="OscuroGradient3" cx="50%" cy="50%" r=".5">
+        <stop offset="0%" stop-color="#2e2f38"></stop>
+        <stop offset="100%" stop-color="#2e2f3800"></stop>
+      </radialGradient>
+    </defs>
+    <rect x="15%" y="3%" width="100%" height="100%" fill="url(#OscuroGradient1)" />
+    <rect x="2%" y="30%" width="100%" height="100%" fill="url(#OscuroGradient2)" />
+    <rect x="8%" y="15%" width="100%" height="100%" fill="url(#OscuroGradient3)" />
+  </svg>
+</div>
+
+
+
+
+  <div id="theme-menu">
+  <button class="theme-btn" data-theme="theme-dark" title="Modo Neón">🎇</button>
+  <button class="theme-btn" data-theme="theme-light" title="Modo Claro">🌞</button>
+  <button class="theme-btn" data-theme="theme-rosa" title="Modo Rosa">🌸</button>
+  <button class="theme-btn" data-theme="theme-oscuro" title="Modo Oscuro">🌑</button>
+</div>
+
+
+  <div class="container">
+    <h1>Calculadora de Promedio Ponderado</h1>
+    <div class="template-controls">
+      <input type="text" id="tplName" placeholder="Nombre plantilla">
+      <button id="saveTpl">Guardar</button>
+      <select id="tplSelect"><option value="">Seleccionar</option></select>
+      <button id="delTpl">Eliminar</button>
+    </div>
+    <div class="main">
+      <div class="controls">
+        <button class="btn-add" onclick="addRow()">+</button>
+        <button class="btn-remove" onclick="removeRow()">-</button>
+        <button class="btn-reset" onclick="resetAll()">↻</button>
+      </div>
+      <div class="rows-wrapper">
+        <div class="labels"><div>Nota</div><div>Ponderación</div></div>
+        <div id="rows-container"></div>
+        <button id="calcBtn" onclick="calculateAverage()">Calcular Promedio</button>
+        <div id="result-panel" class="result-panel red">
+          <div id="result-title">Promedio ponderado</div>
+          <div id="result-value">0.00</div>
+          <div id="result-status">Reprobado</div>
+        </div>
+        <div id="needed-panel" class="result-panel" style="display:none;">
+          <div id="needed-title" style="font-size:1rem;font-weight:600;">Nota mínima necesaria</div>
+          <div id="needed-value" style="font-size:2.1rem;font-weight:bold;">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const container = document.getElementById('rows-container');
+    const saveBtn = document.getElementById('saveTpl');
+    const select = document.getElementById('tplSelect');
+    const delBtn = document.getElementById('delTpl');
+    let initial = [];
+    function initRows() { for(let i=0;i<4;i++) addRow(); initial = Array.from(container.children).map(r=>r.innerHTML); }
+    function addRow(data) { const row = document.createElement('div'); row.className='row'; row.innerHTML = data || `<input type="number" class="grade" step="0.1" min="1" max="7"><input type="number" class="weight" min="1" max="100"><div class="percent">%</div>`; container.appendChild(row); }
+    function removeRow() { const rows=container.querySelectorAll('.row'); if(rows.length>1) container.removeChild(rows[rows.length-1]); else alert('Debe quedar al menos una fila.'); }
+    function resetAll() { container.innerHTML=''; initial.forEach(html=>{const r=document.createElement('div');r.className='row';r.innerHTML=html;container.appendChild(r);}); }
+    function saveTemplate() { const name=document.getElementById('tplName').value.trim(); if(!name)return alert('Nombre requerido'); const data=Array.from(container.children).map(r=>({grade:r.querySelector('.grade').value,weight:r.querySelector('.weight').value})); const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); tpl[name]=data; localStorage.setItem('templates',JSON.stringify(tpl)); loadTemplates(); }
+    function loadTemplates() { select.innerHTML='<option value="">Seleccionar</option>'; const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); Object.keys(tpl).forEach(name=>select.innerHTML+=`<option value="${name}">${name}</option>`); }
+    function applyTemplate() { const name=select.value; if(!name)return; resetAll(); const tpl=JSON.parse(localStorage.getItem('templates'))[name]; container.innerHTML=''; tpl.forEach(({grade,weight})=>addRow(`<input type="number" class="grade" value="${grade}" step="0.1" min="1" max="7"><input type="number" class="weight" value="${weight}" min="1" max="100"><div class="percent">%</div>`)); }
+    function deleteTemplate() { const name=select.value; if(!name)return; const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); delete tpl[name]; localStorage.setItem('templates',JSON.stringify(tpl)); loadTemplates(); }
+    saveBtn.addEventListener('click',saveTemplate);
+    select.addEventListener('change',applyTemplate);
+    delBtn.addEventListener('click',deleteTemplate);
+    function animateNumber(element, start, end, duration = 800, decimals = 2) {
+  if (isNaN(start)) start = 0;
+  if (isNaN(end)) end = 0;
+  const range = end - start;
+  if (range === 0) {
+    element.textContent = end.toFixed(decimals);
+    return;
+  }
+  let startTime = null;
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+    const current = start + range * progress;
+    element.textContent = current.toFixed(decimals);
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      element.textContent = end.toFixed(decimals);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+    function calculateAverage() {
+  let total = 0, sum = 0;
+  let grades = [];
+  let weights = [];
+  let emptyGradeIndex = -1;
+  let emptyGrades = 0;
+
+  document.querySelectorAll('.row').forEach((r, i) => {
+    let g = r.querySelector('.grade').value;
+    let w = r.querySelector('.weight').value;
+    grades.push(g);
+    weights.push(w);
+    if (g === "") {
+      emptyGrades++;
+      emptyGradeIndex = i;
+    }
+    if (w === "") {
+      showError("Completa todas las ponderaciones");
+      return;
+    }
+    g = parseFloat(g);
+    w = parseFloat(w);
+    if (!isNaN(g) && !isNaN(w)) {
+      if (g >= 10) g /= 10;
+      total += w;
+      sum += g * w;
+    }
+  });
+
+  const panel = document.getElementById('result-panel');
+  const neededPanel = document.getElementById('needed-panel');
+
+  // Si hay alguna ponderación vacía, no seguimos
+  if (weights.some(w => w === "")) {
+    showError("Completa todas las ponderaciones");
+    neededPanel.style.display = "none";
+    neededPanel.style.color = getComputedStyle(document.body).getPropertyValue('--needed-panel-text');
+
+    return;
+  }
+
+  // Todas las notas llenas: mostrar promedio
+  if (emptyGrades === 0) {
+    if (total !== 100 && !confirm(`La suma de las ponderaciones es ${total}%. ¿Calcular igual?`)) {
+      neededPanel.style.display = "none";
+      return;
+    }
+    const avg = (sum / total).toFixed(2);
+    animateNumber(document.getElementById('result-value'), 
+    parseFloat(document.getElementById('result-value').textContent) || 0, 
+    parseFloat(avg), 800, 2);
+
+    if (parseFloat(avg) >= 4) {
+      panel.className = 'result-panel blue';
+      document.getElementById('result-status').textContent = 'Aprobado';
+    } else {
+      panel.className = 'result-panel red';
+      document.getElementById('result-status').textContent = 'Reprobado';
+    }
+    neededPanel.style.display = "none";
+    return;
+  }
+
+  // Solo una nota vacía: calcular la nota necesaria
+  if (emptyGrades === 1) {
+    let idx = emptyGradeIndex;
+    let w = parseFloat(weights[idx]);
+    if (isNaN(w) || w <= 0) {
+      showError("La ponderación de la nota faltante no es válida");
+      neededPanel.style.display = "none";
+      return;
+    }
+    // Suma de las otras ponderaciones y notas
+    let partialSum = 0;
+    let partialTotal = 0;
+    for (let i = 0; i < grades.length; i++) {
+      if (i !== idx) {
+        let g = parseFloat(grades[i]);
+        let ww = parseFloat(weights[i]);
+        if (!isNaN(g) && !isNaN(ww)) {
+          if (g >= 10) g /= 10;
+          partialSum += g * ww;
+          partialTotal += ww;
+        }
+      }
+    }
+    // Total ponderaciones actuales
+    let totalW = partialTotal + w;
+    if (totalW !== 100 && !confirm(`La suma de las ponderaciones es ${totalW}%. ¿Calcular igual?`)) {
+      neededPanel.style.display = "none";
+      return;
+    }
+    // (partialSum + x*w)/totalW >= 4 --> x >= (4*totalW - partialSum)/w
+    let needed = (4 * totalW - partialSum) / w;
+    needed = Math.round(needed * 100) / 100;
+    neededPanel.style.display = "";
+    animateNumber(
+  document.getElementById('needed-value'),
+  parseFloat(document.getElementById('needed-value').textContent) || 0,
+  needed < 1 ? 1 : needed,
+  800, 2
+);
+
+   if (needed <= 7 && needed >= 1) {
+  neededPanel.style.background = getComputedStyle(document.body).getPropertyValue('--needed-panel-bg');
+} else {
+  neededPanel.style.background = '#ff4b5c'; // Si es inalcanzable, rojo fuerte en todos los modos
+}
+
+    document.getElementById('needed-title').innerHTML =
+      (needed > 7)
+        ? `Nota mínima necesaria<br><span style="font-size:1rem;display:block;margin-top:8px;">No es posible aprobar.</span>`
+        : "Nota mínima necesaria";
+    // Mostrar mensaje informativo en el panel de resultado
+    panel.className = 'result-panel';
+    document.getElementById('result-value').textContent = "-";
+    document.getElementById('result-status').textContent = "Falta una nota";
+    return;
+  }
+
+  // Más de una nota vacía
+  showError("Completa todas las notas menos una");
+  neededPanel.style.display = "none";
+}
+
+// Mensaje de error estándar
+function showError(msg) {
+  const panel = document.getElementById('result-panel');
+  panel.className = 'result-panel red';
+  document.getElementById('result-value').textContent = "-";
+  document.getElementById('result-status').textContent = msg;
+}
+    // ----- Botón tema claro/oscuro -----
+// ----- Selector de temas -----
+
+    
+function setTheme(theme) {
+  document.body.classList.remove('theme-light', 'theme-dark', 'theme-rosa', 'theme-oscuro');
+  document.body.classList.add(theme);
+  localStorage.setItem('theme', theme);
+  
+  // Mostrar SVG animado solo para el modo actual
+  const bg = document.getElementById('bg-wrap');
+  const bgDark = document.getElementById('bg-wrap-dark');
+  const bgRosa = document.getElementById('bg-wrap-rosa');
+  const bgOscuro = document.getElementById('bg-wrap-oscuro');
+  if (bg) bg.style.opacity = (theme === 'theme-light') ? '1' : '0';
+  if (bgDark) bgDark.style.opacity = (theme === 'theme-dark') ? '1' : '0';
+  if (bgRosa) bgRosa.style.opacity = (theme === 'theme-rosa') ? '1' : '0';
+  if (bgOscuro) bgOscuro.style.opacity = (theme === 'theme-oscuro') ? '1' : '0';
+}
+    const themeBtns = document.querySelectorAll('.theme-btn');
+function updateActiveBtn(theme) {
+  themeBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+}
+themeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    setTheme(btn.dataset.theme);
+    updateActiveBtn(btn.dataset.theme);
+  });
+});
+const savedTheme = localStorage.getItem('theme') || 'theme-dark';
+setTheme(savedTheme);
+updateActiveBtn(savedTheme);
+
+
+
+
+
+
+
+
+
+    initRows(); loadTemplates();
+  </script>
+</body>
+</html>
