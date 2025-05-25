@@ -5,20 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calculadora de Promedio Ponderado</title>
   <style> 
+    body.theme-light {
+      --save-btn-bg: #379aff;
+  --save-btn-bg-hover: #2064c8;
+  --del-btn-bgg: #ff5252;
+  --del-btn-bg-hover: #d32f2f;
+  --add-ramo-btn-bg: #51dc7b;
+  --add-ramo-btn-text: #222;
+  --add-ramo-btn-hover: #22be4c;
+      --select-bg: #e6f7ff;
+  --select-text: #125081;
+  --select-hover: #cbeafe;
+}
+body.theme-dark {
+  --save-btn-bg: #3ca7fd;
+  --save-btn-bg-hover: #125b9c;
+  --del-btn-bgg: #df204a;
+  --del-btn-bg-hover: #b81449;
+  --add-ramo-btn-bg: #216451;
+  --add-ramo-btn-text: #fff;
+  --add-ramo-btn-hover: #007f7f;
+  --select-bg: #13324c;
+  --select-text: #e7ecf5;
+  --select-hover: #1c4870;
+}
+body.theme-rosa {
+  --save-btn-bg: #7bc9fc;
+  --save-btn-bg-hover: #407b9c;
+  --del-btn-bgg: #fc4975;
+  --del-btn-bg-hover: #c9184a;
+  --add-ramo-btn-bg: #ff8fcf;
+  --add-ramo-btn-text: #fff;
+  --add-ramo-btn-hover: #ff57af;
+    --select-bg: #ffe0f3;
+  --select-text: #bf177b;
+  --select-hover: #ffc1e4;
+}
+
+body.theme-oscuro {
+  --save-btn-bg: #376dff;
+  --save-btn-bg-hover: #273d99;
+  --del-btn-bgg: #7d204a;
+  --del-btn-bg-hover: #8e191b;
+  --add-ramo-btn-bg: #216451;
+  --add-ramo-btn-text: #fff;
+  --add-ramo-btn-hover: #114e27;
+}
     body.theme-light #bg-wrap {
-  opacity: 1;
-body.theme-light {
-  
+  opacity: 1;  
   --result-panel-bg: #1b1b1b;
   --needed-panel-bg: #ffb347;
     --result-panel-text: #111;
   --needed-panel-text: #111;
-   --input-text: #111;
+   --input-text: #111; 
+       --select-bg: #212837;
+  --select-text: #e7ecf5;
+  --select-hover: #2d3b57;
+  
 }
 
-}
-
-}
 body.theme-dark #bg-wrap-dark {
   opacity: 1;
   --result-panel-bg: #1b1b1b;
@@ -26,6 +71,7 @@ body.theme-dark #bg-wrap-dark {
   --result-panel-text: #fff;
   --needed-panel-text: #fff;
     --input-text: #fff;
+   
 }
 body.theme-rosa #bg-wrap-rosa {
   opacity: 1;
@@ -34,8 +80,9 @@ body.theme-rosa #bg-wrap-rosa {
     --result-panel-text: #111;
   --needed-panel-text: #111;
     --input-text: #111;
-
+  
 }
+    
 body.theme-oscuro #bg-wrap-oscuro {
   opacity: 1;
    --result-panel-bg: #212227;
@@ -43,6 +90,7 @@ body.theme-oscuro #bg-wrap-oscuro {
   --result-panel-text: #fff;
   --needed-panel-text: #fff;
     --input-text: #fff;
+  
 }
 #bg-wrap,
 #bg-wrap-dark,
@@ -62,13 +110,10 @@ body.theme-oscuro #bg-wrap-oscuro {
   --btn-remove: #3a233a;
   --btn-reset: #333645;
   --text-light: #fafaff;
+  
 }
 
-#bg-wrap,
-#bg-wrap-dark {
-  opacity: 0;
-  transition: opacity 0.6s;
-}
+
 
     body.theme-light #bg-wrap {
   opacity: 1;
@@ -321,6 +366,91 @@ body.theme-oscuro #bg-wrap-oscuro {
   }
   .theme-btn { width: 30px; height: 30px; font-size: 1.08rem;}
 }
+    #delTpl {
+  background: var(--del-btn-bgg) !important;
+  color: #fff !important;
+  border: none;
+  border-radius: 12px;
+  transition: background 0.18s;
+}
+#delTpl:hover {
+  background: var(--del-btn-bg-hover) !important;
+  color: #fff !important;
+}
+    #saveTpl {
+  background: var(--save-btn-bg) !important;
+  color: #fff !important;
+  border: none;
+  border-radius: 12px;
+  transition: background 0.18s;
+}
+#saveTpl:hover {
+  background: var(--save-btn-bg-hover) !important;
+  color: #fff !important;
+}
+    #ramo-panel {
+  display: none;
+  opacity: 0;
+  max-height: 0;
+  transition: opacity 0.4s, max-height 0.45s cubic-bezier(.23,1.21,.54,.97);
+  overflow: hidden;
+}
+#ramo-panel.visible {
+  display: flex;
+  opacity: 1;
+  max-height: 340px; /* Ajusta según el alto de tu panel */
+  flex-direction: column;
+}
+    #show-ramo-panel {
+  background: var(--add-ramo-btn-bg) !important;
+  color: var(--add-ramo-btn-text) !important;
+  border: none;
+  border-radius: 12px;
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 12px #0001;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, transform 0.13s;
+}
+#show-ramo-panel:hover {
+  background: var(--add-ramo-btn-hover) !important;
+  color: var(--add-ramo-btn-text) !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0.2; }
+  70% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+#show-ramo-panel.pop-in {
+  animation: popIn 0.42s cubic-bezier(.21,1.48,.34,.92);
+}
+   #tplSelect {
+  background: var(--select-bg) !important;
+  color: var(--select-text) !important;
+  border: none;
+  border-radius: 12px;
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 12px #0001;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: background 0.18s, color 0.18s, transform 0.13s;
+  appearance: none;
+  text-align: center;
+  text-align-last: center;
+}
+#tplSelect:hover {
+  background: var(--select-hover) !important;
+  color: var(--select-text) !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+
+
 
   </style>
 </head>
@@ -467,12 +597,24 @@ body.theme-oscuro #bg-wrap-oscuro {
 
   <div class="container">
     <h1>Calculadora de Promedio Ponderado</h1>
-    <div class="template-controls">
-      <input type="text" id="tplName" placeholder="Nombre plantilla">
-      <button id="saveTpl">Guardar</button>
-      <select id="tplSelect"><option value="">Seleccionar</option></select>
-      <button id="delTpl">Eliminar</button>
-    </div>
+    <!-- Botón + Agregar Ramo -->
+<button id="show-ramo-panel" style="margin-bottom: 18px; width: 100%; padding: 12px; border-radius: 12px; background: #51dc7b; color: #222; font-size: 1.1rem; border: none; box-shadow: 0 2px 12px #0001; cursor: pointer;">
+  + Agregar Ramo
+</button>
+
+<!-- Select "Seleccionar ramo" DEBAJO del botón anterior -->
+<select id="tplSelect" style="margin-bottom: 16px;"><option value="">Seleccionar ramo</option></select>
+
+<!-- Panel de controles para agregar/guardar/eliminar un ramo -->
+<div class="template-controls" id="ramo-panel" style="display:none;">
+  <input type="text" id="tplName" placeholder="Nombre de ramo">
+  <div style="display: flex; gap: 10px;">
+    <button id="delTpl">Eliminar</button>
+    <button id="saveTpl">Guardar</button>
+  </div>
+  <button id="hide-ramo-panel" style="margin-top:8px; background:#ddd; color:#444; border:none; border-radius:12px; padding:10px 0; font-size:1rem; cursor:pointer;">Cerrar</button>
+</div>
+
     <div class="main">
       <div class="controls">
         <button class="btn-add" onclick="addRow()">+</button>
@@ -506,10 +648,20 @@ body.theme-oscuro #bg-wrap-oscuro {
     function removeRow() { const rows=container.querySelectorAll('.row'); if(rows.length>1) container.removeChild(rows[rows.length-1]); else alert('Debe quedar al menos una fila.'); }
     function resetAll() { container.innerHTML=''; initial.forEach(html=>{const r=document.createElement('div');r.className='row';r.innerHTML=html;container.appendChild(r);}); }
     function saveTemplate() { const name=document.getElementById('tplName').value.trim(); if(!name)return alert('Nombre requerido'); const data=Array.from(container.children).map(r=>({grade:r.querySelector('.grade').value,weight:r.querySelector('.weight').value})); const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); tpl[name]=data; localStorage.setItem('templates',JSON.stringify(tpl)); loadTemplates(); }
-    function loadTemplates() { select.innerHTML='<option value="">Seleccionar</option>'; const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); Object.keys(tpl).forEach(name=>select.innerHTML+=`<option value="${name}">${name}</option>`); }
+    function loadTemplates() { select.innerHTML='<option value="">Seleccionar ramo</option>'; const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); Object.keys(tpl).forEach(name=>select.innerHTML+=`<option value="${name}">${name}</option>`); }
     function applyTemplate() { const name=select.value; if(!name)return; resetAll(); const tpl=JSON.parse(localStorage.getItem('templates'))[name]; container.innerHTML=''; tpl.forEach(({grade,weight})=>addRow(`<input type="number" class="grade" value="${grade}" step="0.1" min="1" max="7"><input type="number" class="weight" value="${weight}" min="1" max="100"><div class="percent">%</div>`)); }
     function deleteTemplate() { const name=select.value; if(!name)return; const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); delete tpl[name]; localStorage.setItem('templates',JSON.stringify(tpl)); loadTemplates(); }
-    saveBtn.addEventListener('click',saveTemplate);
+    saveBtn.addEventListener('click', function() {
+  saveTemplate();
+  // Oculta el panel con animación y muestra el botón Agregar Ramo
+  const panel = document.getElementById('ramo-panel');
+  panel.classList.remove('visible');
+  setTimeout(() => {
+    panel.style.display = 'none';
+    document.getElementById('show-ramo-panel').style.display = '';
+  }, 450); // tiempo igual a la animación CSS
+});
+
     select.addEventListener('change',applyTemplate);
     delBtn.addEventListener('click',deleteTemplate);
     function animateNumber(element, start, end, duration = 800, decimals = 2) {
@@ -702,15 +854,57 @@ const savedTheme = localStorage.getItem('theme') || 'theme-dark';
 setTheme(savedTheme);
 updateActiveBtn(savedTheme);
 
+    document.getElementById('show-ramo-panel').onclick = function() {
+  const panel = document.getElementById('ramo-panel');
+  panel.style.display = 'flex'; // Para activar la transición
+  void panel.offsetWidth;       // Fuerza el reflow para la animación
+  panel.classList.add('visible');
+  this.style.display = 'none';
+};
+    document.getElementById('hide-ramo-panel').onclick = function() {
+  const panel = document.getElementById('ramo-panel');
+  panel.classList.remove('visible');
+  // Espera a que termine la transición para ocultar completamente el panel
+  setTimeout(() => {
+    panel.style.display = 'none';
+    const showBtn = document.getElementById('show-ramo-panel');
+showBtn.style.display = '';
+// Quita clase primero si ya la tiene (permite re-animar)
+showBtn.classList.remove('pop-in');
+void showBtn.offsetWidth; // fuerza reflow
+showBtn.classList.add('pop-in');
 
+  }, 450); // mismo tiempo que la transición CSS
+};
+// Restricción en tiempo real para Notas (10-99, solo enteros) y Ponderaciones (1-100, solo enteros)
+container.addEventListener('input', function(e) {
+  const target = e.target;
+  // Notas
+  if (target.classList.contains('grade')) {
+    // Borra todo menos números
+    target.value = target.value.replace(/\D/g, '');
+    let v = parseInt(target.value, 10);
+    // Limita entre 10 y 99
+    // Limita entre 1 y 99
+if (isNaN(v)) v = '';
+else if (v < 1) v = 1;
+else if (v > 99) v = 99;
+target.value = v ? v : '';
 
-
-
-
-
-
-
+  }
+  // Ponderaciones
+  if (target.classList.contains('weight')) {
+    target.value = target.value.replace(/\D/g, '');
+    let v = parseInt(target.value, 10);
+    if (isNaN(v)) v = '';
+    else if (v < 1) v = 1;
+    else if (v > 100) v = 100;
+    target.value = v ? v : '';
+  }
+});
     initRows(); loadTemplates();
   </script>
+</body>
+</html>
 </body>
 </html>
