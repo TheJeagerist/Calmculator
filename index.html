@@ -451,12 +451,51 @@ body.theme-oscuro #bg-wrap-oscuro {
   transform: translateY(-2px) scale(1.02);
 }
 
+  #spotify-player {
+  position: fixed;
+  bottom: 24px;   /* <-- cambia de top a bottom */
+  right: 24px;
+  z-index: 99;
+  box-shadow: 0 4px 18px #0005;
+  border-radius: 14px;
+  background: #181818cc;
+  padding: 4px;
+  transition: box-shadow 0.15s;
+}
+
+#spotify-player iframe {
+  border-radius: 10px;
+  border: none;
+  width: 320px;
+  height: 80px;
+  display: block;
+}
+@media (max-width: 600px) {
+  #spotify-player {
+    top: 8px;
+    right: 8px;
+    width: 98vw;
+    min-width: 0;
+    padding: 0;
+  }
+  #spotify-player iframe {
+    width: 99vw;
+    min-width: 0;
+  }
+}
+
+
 
 
 
   </style>
 </head>
 <body>
+  <!-- Spotify player fijo arriba a la derecha -->
+<div id="spotify-player">
+  <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M" width="320" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+</div>
+
   <div id="bg-wrap" style="position:fixed;z-index:0;top:0;left:0;width:100vw;height:100vh;pointer-events:none;opacity:0;transition:opacity 0.6s;">
   <!-- Tu SVG aquí -->
   <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100vw;height:100vh;display:block;">
@@ -904,6 +943,9 @@ target.value = v ? v : '';
     target.value = v ? v : '';
   }
 });
+
+
+
 
 
     initRows(); loadTemplates();
