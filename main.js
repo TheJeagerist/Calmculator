@@ -268,6 +268,20 @@ if (localStorage.getItem('menu-collapsed') === '1') {
   sideMenu.classList.add('collapsed');
 }
 
+// Función para contraer el menú lateral cuando se hace clic fuera
+document.addEventListener('click', function(event) {
+  const sideMenu = document.getElementById('side-menu');
+  const collapseBtn = document.getElementById('collapse-menu-btn');
+  
+  // Si el menú está expandido y el clic no fue dentro del menú ni en el botón de colapsar
+  if (!sideMenu.classList.contains('collapsed') && 
+      !sideMenu.contains(event.target) && 
+      !collapseBtn.contains(event.target)) {
+    sideMenu.classList.add('collapsed');
+    localStorage.setItem('menu-collapsed', '1');
+  }
+});
+
 // Variables globales para elementos del DOM
 let calcPanel, escalaPanel, menuCalculadora, menuEscala;
 
@@ -331,6 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
     escalaPanel.style.display = "block";
     this.classList.add('active');
     menuCalculadora.classList.remove('active');
+    menuEscala.classList.remove('active');
+    menuEscala.classList.remove('active');
     generarTablaEscala();
   });
 
@@ -1136,4 +1152,496 @@ function cambiarModo(modo) {
     }
   }
 }
+
+// Funciones para la calculadora de múltiples promedios
+let sectionCounter = 0;
+
+function addSection() {
+  sectionCounter++;
+  const section = document.createElement('div');
+  section.className = 'section-panel';
+  section.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">Sección ${sectionCounter}</div>
+      <div class="section-result">Promedio: <span>0.00</span></div>
+    </div>
+    <div class="section-controls">
+      <button class="btn-add" onclick="addRowToSection(this)">+</button>
+      <button class="btn-remove" onclick="removeRowFromSection(this)">-</button>
+      <button class="btn-reset" onclick="resetSection(this)">↻</button>
+    </div>
+    <div class="section-rows-container">
+      <div class="section-row">
+        <input type="number" class="grade" step="0.1" min="1" max="7">
+        <input type="number" class="weight" min="1" max="100">
+        <div class="percent">%</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('sections-container').appendChild(section);
+}
+
+function removeSection() {
+  const sections = document.getElementById('sections-container');
+  if (sections.children.length > 1) {
+    sections.removeChild(sections.lastChild);
+    sectionCounter--;
+  } else {
+    alert('Debe quedar al menos una sección.');
+  }
+}
+
+function addRowToSection(btn) {
+  const container = btn.closest('.section-panel').querySelector('.section-rows-container');
+  const row = document.createElement('div');
+  row.className = 'section-row';
+  row.innerHTML = `
+    <input type="number" class="grade" step="0.1" min="1" max="7">
+    <input type="number" class="weight" min="1" max="100">
+    <div class="percent">%</div>
+  `;
+  container.appendChild(row);
+}
+
+function removeRowFromSection(btn) {
+  const container = btn.closest('.section-panel').querySelector('.section-rows-container');
+  const rows = container.querySelectorAll('.section-row');
+  if (rows.length > 1) {
+    container.removeChild(rows[rows.length - 1]);
+  } else {
+    alert('Debe quedar al menos una fila.');
+  }
+}
+
+function resetSection(btn) {
+  const container = btn.closest('.section-panel').querySelector('.section-rows-container');
+  const rows = container.querySelectorAll('.section-row');
+  rows.forEach(row => {
+    row.querySelector('.grade').value = '';
+    row.querySelector('.weight').value = '';
+  });
+  updateSectionAverage(container.closest('.section-panel'));
+}
+
+function updateSectionAverage(section) {
+  let total = 0;
+  let sum = 0;
+  const rows = section.querySelectorAll('.section-row');
+  
+  rows.forEach(row => {
+    let g = row.querySelector('.grade').value;
+    let w = row.querySelector('.weight').value;
+    g = parseFloat(g);
+    w = parseFloat(w);
+    
+    if (!isNaN(g) && !isNaN(w)) {
+      if (g >= 10) g /= 10;
+      total += w;
+      sum += g * w;
+    }
+  });
+  
+  const avg = total > 0 ? (sum / total).toFixed(2) : '0.00';
+  section.querySelector('.section-result span').textContent = avg;
+  return { average: parseFloat(avg), total };
+}
+
+// Variable global para controlar si se está aplicando porcentaje
+let aplicandoPorcentaje = false;
+
+function aplicarPorcentajeComun() {
+  const porcentaje = parseInt(document.getElementById('porcentaje-comun').value);
+  // Si el valor no es válido, no hacer nada
+  if (isNaN(porcentaje) || porcentaje < 1 || porcentaje > 100) {
+    return;
+  }
+
+  aplicandoPorcentaje = true;
+  const sections = document.querySelectorAll('.section-panel');
+  sections.forEach(section => {
+    const weightInputs = section.querySelectorAll('.weight');
+    const cantidadNotas = weightInputs.length;
+    
+    // Si hay notas, distribuir el porcentaje
+    if (cantidadNotas > 0) {
+      // Calcular el porcentaje por nota con más precisión
+      const porcentajePorNota = Math.floor((porcentaje / cantidadNotas) * 10) / 10;
+      let porcentajeAcumulado = 0;
+      
+      weightInputs.forEach((input, index) => {
+        if (index === weightInputs.length - 1) {
+          // La última nota recibe el resto para asegurar que sume exactamente el porcentaje total
+          const porcentajeFinal = porcentaje - porcentajeAcumulado;
+          input.value = Math.round(porcentajeFinal * 10) / 10;
+        } else {
+          input.value = porcentajePorNota;
+          porcentajeAcumulado += porcentajePorNota;
+        }
+      });
+
+      // Disparar evento de input para actualizar cálculos
+      weightInputs.forEach(input => {
+        const event = new Event('input', {
+          bubbles: true,
+          cancelable: true,
+        });
+        input.dispatchEvent(event);
+      });
+    }
+  });
+
+  // Actualizar los promedios
+  calculateMultipleAverages();
+  aplicandoPorcentaje = false;
+}
+
+function calculateMultipleAverages() {
+  const sections = document.querySelectorAll('.section-panel');
+  let totalWeight = 0;
+  let weightedSum = 0;
+  let allValid = true;
+  
+  sections.forEach(section => {
+    const { average, total } = updateSectionAverage(section);
+    if (total !== 100 && !aplicandoPorcentaje) {
+      allValid = false;
+      alert(`La suma de las ponderaciones en la ${section.querySelector('.section-title').textContent} debe ser 100%.`);
+      return;
+    }
+    if (!isNaN(average)) {
+      weightedSum += average;
+      totalWeight++;
+    }
+  });
+
+  if (!allValid) return;
+
+  const finalAverage = totalWeight > 0 ? (weightedSum / totalWeight).toFixed(2) : '0.00';
+  const resultPanel = document.getElementById('multi-result-panel');
+  const resultValue = document.getElementById('multi-result-value');
+  const resultStatus = document.getElementById('multi-result-status');
+  
+  animateNumber(resultValue, parseFloat(resultValue.textContent), parseFloat(finalAverage));
+  
+  if (parseFloat(finalAverage) >= 4.0) {
+    resultPanel.className = 'result-panel blue';
+    resultStatus.textContent = 'Aprobado';
+  } else {
+    resultPanel.className = 'result-panel red';
+    resultStatus.textContent = 'Reprobado';
+  }
+}
+
+// Inicializar la primera sección al cargar
+document.addEventListener('DOMContentLoaded', function() {
+  // Agregar event listener para el menú de múltiples promedios
+  const menuMulti = document.getElementById('menu-multi');
+  if (menuMulti) {
+    menuMulti.addEventListener('click', function(e) {
+      e.preventDefault();
+      window.location.hash = 'multi';
+      document.getElementById('calc-panel').style.display = "none";
+      document.getElementById('escala-panel').style.display = "none";
+      document.getElementById('multi-panel').style.display = "block";
+    this.classList.add('active');
+      document.getElementById('menu-calculadora').classList.remove('active');
+      document.getElementById('menu-escala').classList.remove('active');
+      
+      // Si no hay secciones, agregar la primera
+      if (document.getElementById('sections-container').children.length === 0) {
+        addSection();
+      }
+    });
+  }
+  
+  // Actualizar la inicialización de paneles
+  function initializePanels() {
+    if (!initializeElements()) return;
+
+    const hash = window.location.hash;
+    const calcPanel = document.getElementById('calc-panel');
+    const escalaPanel = document.getElementById('escala-panel');
+    const multiPanel = document.getElementById('multi-panel');
+    const menuCalculadora = document.getElementById('menu-calculadora');
+    const menuEscala = document.getElementById('menu-escala');
+    const menuMulti = document.getElementById('menu-multi');
+
+    if (hash === '#escala') {
+      calcPanel.style.display = "none";
+      escalaPanel.style.display = "block";
+      multiPanel.style.display = "none";
+      menuEscala.classList.add('active');
+      menuCalculadora.classList.remove('active');
+      menuMulti.classList.remove('active');
+      generarTablaEscala();
+    } else if (hash === '#multi') {
+      calcPanel.style.display = "none";
+      escalaPanel.style.display = "none";
+      multiPanel.style.display = "block";
+      menuMulti.classList.add('active');
+      menuCalculadora.classList.remove('active');
+      menuEscala.classList.remove('active');
+      if (document.getElementById('sections-container').children.length === 0) {
+        addSection();
+      }
+    } else {
+      calcPanel.style.display = "block";
+      escalaPanel.style.display = "none";
+      multiPanel.style.display = "none";
+      menuCalculadora.classList.add('active');
+      menuEscala.classList.remove('active');
+      menuMulti.classList.remove('active');
+    }
+  }
+
+  // Actualizar event listeners
+  window.addEventListener('hashchange', initializePanels);
+  initializePanels();
+});
+
+// SheetJS debe estar cargado en el HTML
+// Lógica para cargar Excel y crear secciones con nombres
+
+document.addEventListener('DOMContentLoaded', function() {
+  const btnCargarExcel = document.getElementById('btn-cargar-excel-multi');
+  const inputExcel = document.getElementById('input-excel-multi');
+  if (btnCargarExcel && inputExcel) {
+    btnCargarExcel.addEventListener('click', function() {
+      inputExcel.value = '';
+      inputExcel.click();
+    });
+    inputExcel.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        // Leer solo la primera columna, asumiendo que son nombres
+        const nombres = XLSX.utils.sheet_to_json(worksheet, {header: 1})
+          .map(row => row[0])
+          .filter(Boolean);
+
+        if (nombres.length > 0) {
+          // Limpiar el contenedor de secciones
+          const sectionsContainer = document.getElementById('sections-container');
+          sectionsContainer.innerHTML = '';
+          sectionCounter = 0;
+
+          // Crear las nuevas secciones con los nombres del Excel
+          nombres.forEach(nombre => {
+            addSectionWithName(nombre);
+          });
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+});
+
+// Nueva función para crear sección con nombre personalizado
+function addSectionWithName(nombre) {
+  sectionCounter++;
+  const section = document.createElement('div');
+  section.className = 'section-panel';
+  section.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">${nombre}</div>
+      <div class="section-result">Promedio: <span>0.00</span></div>
+    </div>
+    <div class="section-controls">
+      <button class="btn-add" onclick="addRowToSection(this)">+</button>
+      <button class="btn-remove" onclick="removeRowFromSection(this)">-</button>
+      <button class="btn-reset" onclick="resetSection(this)">↻</button>
+    </div>
+    <div class="section-rows-container">
+      <div class="section-row">
+        <input type="number" class="grade" step="0.1" min="1" max="7">
+        <input type="number" class="weight" min="1" max="100">
+        <div class="percent">%</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('sections-container').appendChild(section);
+}
+
+// Función para descargar Excel con las notas
+function downloadExcel() {
+  // Crear un nuevo libro de trabajo
+  const wb = XLSX.utils.book_new();
+  
+  // Obtener todas las secciones
+  const sections = document.querySelectorAll('.section-panel');
+  
+  // Encontrar el número máximo de notas entre todas las secciones
+  let maxNotas = 0;
+  sections.forEach(section => {
+    const numNotas = section.querySelectorAll('.section-row').length;
+    maxNotas = Math.max(maxNotas, numNotas);
+  });
+  
+  // Preparar los datos para el Excel
+  const data = [];
+  
+  sections.forEach(section => {
+    const sectionName = section.querySelector('.section-title').textContent;
+    const rows = section.querySelectorAll('.section-row');
+    const average = section.querySelector('.section-result span').textContent;
+    
+    // Preparar la fila con el formato: [Nombre, Nota1, Nota2, ..., Ponderación1, Ponderación2, ..., Promedio]
+    const rowData = [sectionName];
+    
+    // Agregar notas, rellenando con espacios en blanco si faltan
+    for (let i = 0; i < maxNotas; i++) {
+      if (i < rows.length) {
+        rowData.push(rows[i].querySelector('.grade').value || '');
+      } else {
+        rowData.push(''); // Espacio en blanco para notas faltantes
+      }
+    }
+    
+    // Agregar ponderaciones, rellenando con espacios en blanco si faltan
+    for (let i = 0; i < maxNotas; i++) {
+      if (i < rows.length) {
+        rowData.push(rows[i].querySelector('.weight').value || '');
+      } else {
+        rowData.push(''); // Espacio en blanco para ponderaciones faltantes
+      }
+    }
+    
+    // Agregar el promedio
+    rowData.push(average);
+    
+    data.push(rowData);
+  });
+  
+  // Crear los encabezados
+  const headers = ['Nombre'];
+  
+  // Agregar encabezados para las notas
+  for (let i = 1; i <= maxNotas; i++) {
+    headers.push(`Nota ${i}`);
+  }
+  
+  // Agregar encabezados para las ponderaciones
+  for (let i = 1; i <= maxNotas; i++) {
+    headers.push(`Ponderación ${i}`);
+  }
+  
+  // Agregar encabezado para el promedio
+  headers.push('Promedio');
+  
+  // Insertar los encabezados al principio
+  data.unshift(headers);
+  
+  // Agregar el promedio general al final
+  const generalAverage = document.getElementById('multi-result-value').textContent;
+  data.push([]);
+  data.push(['Promedio General', generalAverage]);
+  
+  // Crear la hoja de cálculo
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  
+  // Agregar estilos básicos (centrado y bordes)
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const cell_address = {c: C, r: R};
+      const cell_ref = XLSX.utils.encode_cell(cell_address);
+      if (!ws[cell_ref]) continue;
+      
+      ws[cell_ref].s = {
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" }
+        }
+      };
+    }
+  }
+  
+  // Agregar la hoja al libro
+  XLSX.utils.book_append_sheet(wb, ws, 'Notas');
+  
+  // Generar el archivo y descargarlo
+  XLSX.writeFile(wb, 'notas_calculadora.xlsx');
+}
+
+// Event listener para el botón de descargar Excel
+document.addEventListener('DOMContentLoaded', function() {
+  const btnDescargarExcel = document.getElementById('btn-descargar-excel-multi');
+  if (btnDescargarExcel) {
+    btnDescargarExcel.addEventListener('click', downloadExcel);
+  }
+});
+
+// Función para aplicar cantidad de notas a todas las secciones
+function aplicarCantidadNotas() {
+  const cantidadNotas = parseInt(document.getElementById('cantidad-notas').value);
+  if (isNaN(cantidadNotas) || cantidadNotas < 1) {
+    alert('Por favor ingrese un número válido de notas (mínimo 1)');
+    return;
+  }
+
+  const sections = document.querySelectorAll('.section-panel');
+  sections.forEach(section => {
+    const container = section.querySelector('.section-rows-container');
+    const currentRows = container.querySelectorAll('.section-row').length;
+
+    // Si hay menos filas que la cantidad deseada, agregar más
+    if (currentRows < cantidadNotas) {
+      for (let i = currentRows; i < cantidadNotas; i++) {
+        const row = document.createElement('div');
+        row.className = 'section-row';
+        row.innerHTML = `
+          <input type="number" class="grade" step="0.1" min="1" max="7">
+          <input type="number" class="weight" min="1" max="100">
+          <div class="percent">%</div>
+        `;
+        container.appendChild(row);
+      }
+    }
+    // Si hay más filas que la cantidad deseada, eliminar las sobrantes
+    else if (currentRows > cantidadNotas) {
+      for (let i = currentRows; i > cantidadNotas; i--) {
+        container.removeChild(container.lastChild);
+      }
+    }
+  });
+}
+
+// Agregar inicialización del control de notas en el DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+  // ... código existente ...
+
+  // Eliminar la generación dinámica de los controles ya que existen en el HTML
+  // const multiPanel = document.getElementById('multi-panel');
+  // if (multiPanel && !document.getElementById('notas-control')) {
+  //   const controlDiv = document.createElement('div');
+  //   controlDiv.id = 'notas-control';
+  //   controlDiv.className = 'notas-control';
+  //   controlDiv.innerHTML = `
+  //     <div class="control-group">
+  //       <label for="cantidad-notas">Cantidad de notas:</label>
+  //       <input type="number" id="cantidad-notas" min="1" value="1">
+  //       <button onclick="aplicarCantidadNotas()" class="btn-aplicar">Aplicar</button>
+  //     </div>
+  //     <div class="control-group">
+  //       <label for="porcentaje-comun">Porcentaje a dividir:</label>
+  //       <input type="number" id="porcentaje-comun" min="1" max="100" value="100">
+  //       <button onclick="aplicarPorcentajeComun()" class="btn-aplicar">Aplicar</button>
+  //     </div>
+  //   `;
+    
+  //   // Insertar el control antes del contenedor de secciones
+  //   const sectionsContainer = document.getElementById('sections-container');
+  //   if (sectionsContainer) {
+  //     sectionsContainer.parentNode.insertBefore(controlDiv, sectionsContainer);
+  //   }
+  // }
+});
 
