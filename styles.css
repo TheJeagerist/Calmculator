@@ -1769,7 +1769,7 @@ body.theme-dark .paes-input-container input {
 }
 
 body.theme-light .paes-input-container input {
-  background: rgba(79, 188, 255, 0.1);
+  background: rgba(79, 188, 255, 0.1); 
 }
 
 body.theme-rosa .paes-input-container input {
