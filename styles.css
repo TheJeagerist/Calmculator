@@ -623,7 +623,6 @@ body.theme-oscuro #bg-wrap-oscuro {
   animation: popIn 0.42s cubic-bezier(.21,1.48,.34,.92);
 }
    #tplSelect {
-  flex: 3;
   background: var(--select-bg) !important;
   color: var(--select-text) !important;
   border: none;
@@ -634,12 +633,12 @@ body.theme-oscuro #bg-wrap-oscuro {
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
-  text-align: center;
+  min-width: 180px; /* Ancho mínimo aumentado para asegurar que el texto quepa */
+  width: auto;
 }
+
 #tplSelect:hover {
-  background: var(--select-hover) !important;
-  color: var(--select-text) !important;
-  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.1);
 }
 
 /* NEON SIDE MENU */
@@ -1553,11 +1552,12 @@ body.theme-oscuro #toggle-columnas:hover {
 /* Panel superior */
 .top-panel {
   display: flex;
-  align-items: center;
-  gap: 25px;
+  gap: 20px;
   margin-bottom: 20px;
-  padding: 0 10px;
+  align-items: center;
   justify-content: center;
+  flex-wrap: wrap; /* Permitir que los elementos se envuelvan en pantallas pequeñas */
+  padding: 0 15px;
 }
 
 #tplSelect {
@@ -1573,7 +1573,18 @@ body.theme-oscuro #toggle-columnas:hover {
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
-  text-align: center;
+  min-width: 180px; /* Ancho mínimo aumentado para asegurar que el texto quepa */
+  width: auto;
+}
+
+#tplSelect:hover {
+  filter: brightness(1.1);
+}
+
+/* Asegurar que el texto del select se vea centrado y completo */
+#tplSelect option {
+  text-align: left;
+  padding: 8px;
 }
 
 .add-ramo-btn {
