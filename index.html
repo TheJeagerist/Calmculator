@@ -36,6 +36,17 @@
       </span>
       <span class="menu-label">Escala de Notas</span>
     </a>
+    <a href="#multi" id="menu-multi" data-tooltip="Múltiples Promedios">
+      <span class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      </span>
+      <span class="menu-label">Múltiples Promedios</span>
+    </a>
   </nav>
 
   
@@ -245,6 +256,7 @@
         </div>
       </div>
     </div>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="main.js"></script>
   <div id="escala-panel" style="display:none;max-width:900px;margin:40px auto 0 auto;">
     <div class="container" style="background: var(--card-bg);">
@@ -334,7 +346,46 @@
     </div>
   </div>
 
+  <div id="multi-panel" style="display:none;">
+    <div class="container">
+      <h1>Calculadora de Múltiples Promedios</h1>
+      
+      <div class="multi-controls">
+        <button class="btn-add-section" onclick="addSection()"> Agregar Sección</button>
+        <button class="btn-remove-section" onclick="removeSection()">Eliminar Sección</button>
+        <input type="file" id="input-excel-multi" accept=".xls,.xlsx" style="display:none" />
+        <button id="btn-cargar-excel-multi" type="button">Cargar Excel</button>
+        <button id="btn-descargar-excel-multi" type="button">Descargar Excel</button>
+      </div>
+
+      <!-- Controles de notas y porcentajes -->
+      <div class="notas-control">
+        <div class="control-group">
+          <input type="number" id="cantidad-notas" min="1" value="1" placeholder="Cantidad de notas">
+          <button onclick="aplicarCantidadNotas()" class="btn-aplicar">Número de notas</button>
+        </div>
+        <div class="control-group">
+          <input type="number" id="porcentaje-comun" min="1" max="100" value="100" placeholder="Porcentaje a dividir">
+          <button onclick="aplicarPorcentajeComun()" class="btn-aplicar">Aplicar porcentaje</button>
+        </div>
+      </div>
+
+      <div id="sections-container">
+        <!-- Las secciones se agregarán aquí dinámicamente -->
+      </div>
+
+      <div class="multi-results">
+        <div id="multi-result-panel" class="result-panel">
+          <div id="multi-result-title">Promedio General</div>
+          <div id="multi-result-value">0.00</div>
+          <div id="multi-result-status">-</div>
+        </div>
+        <button id="calcMultiBtn" onclick="calculateMultipleAverages()">Calcular Promedios</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
+
 
