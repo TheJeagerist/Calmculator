@@ -1,0 +1,1138 @@
+const container = document.getElementById('rows-container');
+const saveBtn = document.getElementById('saveTpl');
+const select = document.getElementById('tplSelect');
+const delBtn = document.getElementById('delTpl');
+
+let initial = [];
+function initRows() { for(let i=0;i<4;i++) addRow(); initial = Array.from(container.children).map(r=>r.innerHTML); }
+function addRow(data) { const row = document.createElement('div'); row.className='row'; row.innerHTML = data || `<input type="number" class="grade" step="0.1" min="1" max="7"><input type="number" class="weight" min="1" max="100"><div class="percent">%</div>`; container.appendChild(row); }
+function removeRow() { const rows=container.querySelectorAll('.row'); if(rows.length>1) container.removeChild(rows[rows.length-1]); else alert('Debe quedar al menos una fila.'); }
+function resetAll() { container.innerHTML=''; initial.forEach(html=>{const r=document.createElement('div');r.className='row';r.innerHTML=html;container.appendChild(r);}); }
+function saveTemplate() { const name=document.getElementById('tplName').value.trim(); if(!name)return alert('Nombre requerido'); const data=Array.from(container.children).map(r=>({grade:r.querySelector('.grade').value,weight:r.querySelector('.weight').value})); const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); tpl[name]=data; localStorage.setItem('templates',JSON.stringify(tpl)); loadTemplates(); }
+function loadTemplates() { select.innerHTML='<option value="">Seleccionar ramo</option>'; const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); Object.keys(tpl).forEach(name=>select.innerHTML+=`<option value="${name}">${name}</option>`); }
+function applyTemplate() { const name=select.value; if(!name)return; resetAll(); const tpl=JSON.parse(localStorage.getItem('templates'))[name]; container.innerHTML=''; tpl.forEach(({grade,weight})=>addRow(`<input type="number" class="grade" value="${grade}" step="0.1" min="1" max="7"><input type="number" class="weight" value="${weight}" min="1" max="100"><div class="percent">%</div>`)); }
+function deleteTemplate() { const name=select.value; if(!name)return; const tpl=JSON.parse(localStorage.getItem('templates')||'{}'); delete tpl[name]; localStorage.setItem('templates',JSON.stringify(tpl)); loadTemplates(); }
+saveBtn.addEventListener('click', function() {
+  saveTemplate();
+  // Oculta el panel con animación y muestra el botón Agregar Ramo
+  const panel = document.getElementById('ramo-panel');
+  panel.classList.remove('visible');
+  setTimeout(() => {
+    panel.style.display = 'none';
+    document.getElementById('show-ramo-panel').style.display = '';
+  }, 450); // tiempo igual a la animación CSS
+});
+
+select.addEventListener('change',applyTemplate);
+delBtn.addEventListener('click',deleteTemplate);
+
+function animateNumber(element, start, end, duration = 800, decimals = 2) {
+  if (isNaN(start)) start = 0;
+  if (isNaN(end)) end = 0;
+  const range = end - start;
+  if (range === 0) {
+    element.textContent = end.toFixed(decimals);
+    return;
+  }
+  let startTime = null;
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+    const current = start + range * progress;
+    element.textContent = current.toFixed(decimals);
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      element.textContent = end.toFixed(decimals);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function calculateAverage() {
+  let total = 0, sum = 0;
+  let grades = [];
+  let weights = [];
+  let emptyGradeIndex = -1;
+  let emptyGrades = 0;
+
+  document.querySelectorAll('.row').forEach((r, i) => {
+    let g = r.querySelector('.grade').value;
+    let w = r.querySelector('.weight').value;
+    grades.push(g);
+    weights.push(w);
+    if (g === "") {
+      emptyGrades++;
+      emptyGradeIndex = i;
+    }
+    if (w === "") {
+      showError("Completa todas las ponderaciones");
+      return;
+    }
+    g = parseFloat(g);
+    w = parseFloat(w);
+    if (!isNaN(g) && !isNaN(w)) {
+      if (g >= 10) g /= 10;
+      total += w;
+      sum += g * w;
+    }
+  });
+
+  const panel = document.getElementById('result-panel');
+  const neededPanel = document.getElementById('needed-panel');
+
+  // Si hay alguna ponderación vacía, no seguimos
+  if (weights.some(w => w === "")) {
+    showError("Completa todas las ponderaciones");
+    neededPanel.style.display = "none";
+    neededPanel.style.color = getComputedStyle(document.body).getPropertyValue('--needed-panel-text');
+    return;
+  }
+
+  // Todas las notas llenas: mostrar promedio
+  if (emptyGrades === 0) {
+    if (total !== 100 && !confirm(`La suma de las ponderaciones es ${total}%. ¿Calcular igual?`)) {
+      neededPanel.style.display = "none";
+      return;
+    }
+    const avg = (sum / total).toFixed(2);
+    animateNumber(document.getElementById('result-value'),
+    parseFloat(document.getElementById('result-value').textContent) || 0,
+    parseFloat(avg), 800, 2);
+
+    if (parseFloat(avg) >= 4) {
+      panel.className = 'result-panel blue';
+      document.getElementById('result-status').textContent = 'Aprobado';
+    } else {
+      panel.className = 'result-panel red';
+      document.getElementById('result-status').textContent = 'Reprobado';
+    }
+    neededPanel.style.display = "none";
+    return;
+  }
+
+  // Solo una nota vacía: calcular la nota necesaria
+  if (emptyGrades === 1) {
+    let idx = emptyGradeIndex;
+    let w = parseFloat(weights[idx]);
+    if (isNaN(w) || w <= 0) {
+      showError("La ponderación de la nota faltante no es válida");
+      neededPanel.style.display = "none";
+      return;
+    }
+    // Suma de las otras ponderaciones y notas
+    let partialSum = 0;
+    let partialTotal = 0;
+    for (let i = 0; i < grades.length; i++) {
+      if (i !== idx) {
+        let g = parseFloat(grades[i]);
+        let ww = parseFloat(weights[i]);
+        if (!isNaN(g) && !isNaN(ww)) {
+          if (g >= 10) g /= 10;
+          partialSum += g * ww;
+          partialTotal += ww;
+        }
+      }
+    }
+    // Total ponderaciones actuales
+    let totalW = partialTotal + w;
+    if (totalW !== 100 && !confirm(`La suma de las ponderaciones es ${totalW}%. ¿Calcular igual?`)) {
+      neededPanel.style.display = "none";
+      return;
+    }
+    // (partialSum + x*w)/totalW >= 4 --> x >= (4*totalW - partialSum)/w
+    let needed = (4 * totalW - partialSum) / w;
+    needed = Math.round(needed * 100) / 100;
+    neededPanel.style.display = "";
+    animateNumber(
+      document.getElementById('needed-value'),
+      parseFloat(document.getElementById('needed-value').textContent) || 0,
+      needed < 1 ? 1 : needed,
+      800, 2
+    );
+
+    if (needed <= 7 && needed >= 1) {
+      neededPanel.style.background = getComputedStyle(document.body).getPropertyValue('--needed-panel-bg');
+    } else {
+      neededPanel.style.background = '#ff4b5c'; // Si es inalcanzable, rojo fuerte en todos los modos
+    }
+
+    document.getElementById('needed-title').innerHTML =
+      (needed > 7)
+        ? `Nota mínima necesaria<br><span style="font-size:1rem;display:block;margin-top:8px;">No es posible aprobar.</span>`
+        : "Nota mínima necesaria";
+    // Mostrar mensaje informativo en el panel de resultado
+    panel.className = 'result-panel';
+    document.getElementById('result-value').textContent = "-";
+    document.getElementById('result-status').textContent = "Falta una nota";
+    return;
+  }
+
+  // Más de una nota vacía
+  showError("Completa todas las notas menos una");
+  neededPanel.style.display = "none";
+}
+
+// Mensaje de error estándar
+function showError(msg) {
+  const panel = document.getElementById('result-panel');
+  panel.className = 'result-panel red';
+  document.getElementById('result-value').textContent = "-";
+  document.getElementById('result-status').textContent = msg;
+}
+
+// Tema
+function setTheme(theme) {
+  document.body.classList.remove('theme-light', 'theme-dark', 'theme-rosa', 'theme-oscuro');
+  document.body.classList.add(theme);
+  localStorage.setItem('theme', theme);
+
+  // Mostrar SVG animado solo para el modo actual
+  const bg = document.getElementById('bg-wrap');
+  const bgDark = document.getElementById('bg-wrap-dark');
+  const bgRosa = document.getElementById('bg-wrap-rosa');
+  const bgOscuro = document.getElementById('bg-wrap-oscuro');
+  if (bg) bg.style.opacity = (theme === 'theme-light') ? '1' : '0';
+  if (bgDark) bgDark.style.opacity = (theme === 'theme-dark') ? '1' : '0';
+  if (bgRosa) bgRosa.style.opacity = (theme === 'theme-rosa') ? '1' : '0';
+  if (bgOscuro) bgOscuro.style.opacity = (theme === 'theme-oscuro') ? '1' : '0';
+}
+
+const themeBtns = document.querySelectorAll('.theme-btn');
+function updateActiveBtn(theme) {
+  themeBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+}
+themeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    setTheme(btn.dataset.theme);
+    updateActiveBtn(btn.dataset.theme);
+  });
+});
+const savedTheme = localStorage.getItem('theme') || 'theme-dark';
+setTheme(savedTheme);
+updateActiveBtn(savedTheme);
+
+// Mostrar y ocultar el panel de ramos
+document.getElementById('show-ramo-panel').onclick = function() {
+  const panel = document.getElementById('ramo-panel');
+  panel.style.display = 'flex'; // Para activar la transición
+  void panel.offsetWidth;       // Fuerza el reflow para la animación
+  panel.classList.add('visible');
+  this.style.display = 'none';
+};
+document.getElementById('hide-ramo-panel').onclick = function() {
+  const panel = document.getElementById('ramo-panel');
+  panel.classList.remove('visible');
+  setTimeout(() => {
+    panel.style.display = 'none';
+    const showBtn = document.getElementById('show-ramo-panel');
+    showBtn.style.display = '';
+    showBtn.classList.remove('pop-in');
+    void showBtn.offsetWidth;
+    showBtn.classList.add('pop-in');
+  }, 450);
+};
+
+// Restricción en tiempo real para Notas (1-99) y Ponderaciones (1-100, solo enteros)
+container.addEventListener('input', function(e) {
+  const target = e.target;
+  // Notas
+  if (target.classList.contains('grade')) {
+    target.value = target.value.replace(/\D/g, '');
+    let v = parseInt(target.value, 10);
+    if (isNaN(v)) v = '';
+    else if (v < 1) v = 1;
+    else if (v > 99) v = 99;
+    target.value = v ? v : '';
+  }
+  // Ponderaciones
+  if (target.classList.contains('weight')) {
+    target.value = target.value.replace(/\D/g, '');
+    let v = parseInt(target.value, 10);
+    if (isNaN(v)) v = '';
+    else if (v < 1) v = 1;
+    else if (v > 100) v = 100;
+    target.value = v ? v : '';
+  }
+});
+
+const sideMenu = document.getElementById('side-menu');
+const collapseBtn = document.getElementById('collapse-menu-btn');
+collapseBtn.addEventListener('click', () => {
+  sideMenu.classList.toggle('collapsed');
+  localStorage.setItem('menu-collapsed', sideMenu.classList.contains('collapsed') ? '1' : '0');
+});
+if (localStorage.getItem('menu-collapsed') === '1') {
+  sideMenu.classList.add('collapsed');
+}
+
+// Variables globales para elementos del DOM
+let calcPanel, escalaPanel, menuCalculadora, menuEscala;
+
+// Función para inicializar los elementos del DOM
+function initializeElements() {
+  calcPanel = document.getElementById('calc-panel');
+  escalaPanel = document.getElementById('escala-panel');
+  menuCalculadora = document.getElementById('menu-calculadora');
+  menuEscala = document.getElementById('menu-escala');
+
+  // Verificar que todos los elementos existan
+  if (!calcPanel || !escalaPanel || !menuCalculadora || !menuEscala) {
+    console.error('Error: No se encontraron todos los elementos necesarios');
+    return false;
+  }
+  return true;
+}
+
+// Inicializar el panel activo según la URL o mostrar calculadora por defecto
+function initializePanels() {
+  if (!initializeElements()) return;
+
+  const hash = window.location.hash;
+  if (hash === '#escala') {
+    calcPanel.style.display = "none";
+    escalaPanel.style.display = "block";
+    menuEscala.classList.add('active');
+    menuCalculadora.classList.remove('active');
+    generarTablaEscala();
+  } else {
+    calcPanel.style.display = "block";
+    escalaPanel.style.display = "none";
+    menuCalculadora.classList.add('active');
+    menuEscala.classList.remove('active');
+  }
+}
+
+// Esperar a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+  // Inicializar elementos
+  if (!initializeElements()) return;
+
+  // Inicializar filas y plantillas
+  initRows();
+  loadTemplates();
+
+  // Configurar event listeners
+  menuCalculadora.addEventListener('click', function(e) {
+    e.preventDefault();
+    window.location.hash = '';
+    calcPanel.style.display = "block";
+    escalaPanel.style.display = "none";
+    this.classList.add('active');
+    menuEscala.classList.remove('active');
+  });
+
+  menuEscala.addEventListener('click', function(e) {
+    e.preventDefault();
+    window.location.hash = 'escala';
+    calcPanel.style.display = "none";
+    escalaPanel.style.display = "block";
+    this.classList.add('active');
+    menuCalculadora.classList.remove('active');
+    generarTablaEscala();
+  });
+
+  // Inicializar paneles
+  initializePanels();
+
+  // Configurar event listener para cambios en el hash
+  window.addEventListener('hashchange', initializePanels);
+});
+
+function generarTablaEscala() {
+  console.log('Generando tabla de escala...');
+  
+  // Verificar que todos los elementos existan
+  const elementos = {
+    puntajeMax: document.getElementById('puntajeMax'),
+    exigencia: document.getElementById('exigencia'),
+    notaMin: document.getElementById('notaMin'),
+    notaMax: document.getElementById('notaMax'),
+    notaAprob: document.getElementById('notaAprob'),
+    tablaEscala: document.getElementById('tablaEscala')
+  };
+
+  // Verificar si algún elemento no existe
+  for (const [nombre, elemento] of Object.entries(elementos)) {
+    if (!elemento) {
+      console.error(`Error: No se encontró el elemento ${nombre}`);
+      return;
+    }
+  }
+
+  // Obtener y validar valores
+  let puntajeMax = Math.max(1, parseFloat(elementos.puntajeMax.value) || 100);
+  let exigencia = Math.min(100, Math.max(1, parseFloat(elementos.exigencia.value) || 60));
+  let notaMin = Math.max(1, Math.min(7, parseFloat(elementos.notaMin.value) || 1.0));
+  let notaMax = Math.max(notaMin + 0.1, Math.min(7, parseFloat(elementos.notaMax.value) || 7.0));
+  let notaAprob = Math.max(notaMin, Math.min(notaMax, parseFloat(elementos.notaAprob.value) || 4.0));
+
+  // Actualizar los valores en los inputs
+  elementos.puntajeMax.value = puntajeMax;
+  elementos.exigencia.value = exigencia;
+  elementos.notaMin.value = notaMin.toFixed(1);
+  elementos.notaMax.value = notaMax.toFixed(1);
+  elementos.notaAprob.value = notaAprob.toFixed(1);
+
+  // Calcular puntaje de aprobación según la fórmula
+  const puntajeAprob = puntajeMax * (exigencia / 100);
+
+  let puntajes = [];
+  let notas = [];
+  
+  // Generar puntajes y notas
+  for (let puntaje = puntajeMax; puntaje >= 0; puntaje--) {
+    let nota;
+    if (puntaje < puntajeAprob) {
+      nota = notaMin + (puntaje * (notaAprob - notaMin)) / puntajeAprob;
+    } else {
+      nota = notaAprob + ((puntaje - puntajeAprob) * (notaMax - notaAprob)) / (puntajeMax - puntajeAprob);
+    }
+    nota = Math.round(nota * 10) / 10;
+    nota = Math.max(notaMin, Math.min(notaMax, nota));
+    puntajes.push(puntaje);
+    notas.push(nota.toFixed(1));
+  }
+
+  // Determinar el número de columnas según el ancho de la ventana
+  let numColumnas = 5; // Por defecto 5 columnas
+  if (window.innerWidth <= 600) {
+    numColumnas = 2;
+  } else if (window.innerWidth <= 900) {
+    numColumnas = 3;
+  } else if (window.innerWidth <= 1200) {
+    numColumnas = 4;
+  }
+
+  // Calcular filas por columna
+  const totalPuntajes = puntajes.length;
+  const filasPerColumna = Math.ceil(totalPuntajes / numColumnas);
+
+  // Crear columnas balanceadas
+  let columnas = [];
+  for (let i = 0; i < numColumnas; i++) {
+    const inicio = i * filasPerColumna;
+    const fin = Math.min(inicio + filasPerColumna, totalPuntajes);
+    if (inicio < totalPuntajes) {
+      columnas.push({
+        puntajes: puntajes.slice(inicio, fin),
+        notas: notas.slice(inicio, fin)
+      });
+    }
+  }
+
+  // Construir HTML
+  let tablasHtml = columnas.map(col => {
+    let filas = '';
+    for (let j = 0; j < col.puntajes.length; j++) {
+      let nota = parseFloat(col.notas[j]);
+      let cellClass = nota >= notaAprob ? "aprob" : "";
+      filas += `
+        <tr>
+          <td>${col.puntajes[j]}</td>
+          <td class='${cellClass}'>${col.notas[j]}</td>
+        </tr>`;
+    }
+    return `
+      <table>
+        <tr>
+          <th>Puntaje</th>
+          <th>Nota</th>
+        </tr>
+        ${filas}
+      </table>`;
+  }).join('');
+
+  elementos.tablaEscala.innerHTML = `<div class="tabla-multi-inner">${tablasHtml}</div>`;
+  console.log('Tabla generada exitosamente');
+}
+
+// Agregar event listeners para los inputs y resize
+document.addEventListener('DOMContentLoaded', function() {
+  const inputs = ['puntajeMax', 'exigencia', 'notaMin', 'notaMax', 'notaAprob'];
+  
+  inputs.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('input', generarTablaEscala);
+      input.addEventListener('blur', function() {
+        if (this.value === '') {
+          switch(id) {
+            case 'puntajeMax': this.value = '100'; break;
+            case 'exigencia': this.value = '60'; break;
+            case 'notaMin': this.value = '1.0'; break;
+            case 'notaMax': this.value = '7.0'; break;
+            case 'notaAprob': this.value = '4.0'; break;
+          }
+          generarTablaEscala();
+        }
+      });
+    }
+  });
+
+  // Regenerar tabla cuando cambie el tamaño de la ventana
+  let resizeTimeout;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(generarTablaEscala, 250);
+  });
+  
+  // Generar tabla inicial
+  generarTablaEscala();
+});
+
+// Variable global para el modo actual
+let modoTablaActual = 'normal';
+let submodoPaesActual = null;
+
+// Configuración predeterminada para cada modo
+const configuracionesModo = {
+  normal: {
+    puntajeMax: 100,
+    exigencia: 60,
+    notaMin: 1.0,
+    notaMax: 7.0,
+    notaAprob: 4.0
+  },
+  simce: {
+    puntajeMax: 400,
+    exigencia: 60,
+    notaMin: 1.0,
+    notaMax: 7.0,
+    notaAprob: 4.0
+  },
+  paes: {
+    'competencia-lectora': {
+      puntajeMax: 1000,
+      exigencia: 60,
+      notaMin: 1.0,
+      notaMax: 7.0,
+      notaAprob: 4.0
+    },
+    'm1': {
+      puntajeMax: 1000,
+      exigencia: 60,
+      notaMin: 1.0,
+      notaMax: 7.0,
+      notaAprob: 4.0
+    },
+    'm2': {
+      puntajeMax: 1000,
+      exigencia: 60,
+      notaMin: 1.0,
+      notaMax: 7.0,
+      notaAprob: 4.0
+    },
+    'ciencias': {
+      puntajeMax: 1000,
+      exigencia: 60,
+      notaMin: 1.0,
+      notaMax: 7.0,
+      notaAprob: 4.0
+    },
+    'historia': {
+      puntajeMax: 1000,
+      exigencia: 60,
+      notaMin: 1.0,
+      notaMax: 7.0,
+      notaAprob: 4.0
+    }
+  }
+};
+
+// Agregar el mapeo de nombres de modos PAES
+const modosPaesNombres = {
+  'competencia-lectora': 'Competencia Lectora',
+  'm1': 'M1 Matemáticas',
+  'm2': 'M2 Matemáticas',
+  'ciencias': 'Ciencias',
+  'historia': 'Historia'
+};
+
+// Función para manejar el menú desplegable de PAES
+function togglePaesDropdown(event) {
+  const dropdown = document.querySelector('.paes-dropdown');
+  const button = document.querySelector('.tabla-mode-btn.has-dropdown');
+  
+  if (event.type === 'click' && event.target.closest('.tabla-mode-btn.has-dropdown')) {
+    dropdown.classList.toggle('show');
+    button.classList.toggle('active');
+  } else if (event.type === 'click' && !event.target.closest('.paes-dropdown') && !event.target.closest('.tabla-mode-btn.has-dropdown')) {
+    dropdown.classList.remove('show');
+    button.classList.remove('active');
+  }
+}
+
+// Modificar la función cambiarModoTabla
+function cambiarModoTabla(modo, submodo = null) {
+  modoTablaActual = modo;
+  submodoPaesActual = submodo;
+  
+  // Actualizar estado visual de los botones
+  document.querySelectorAll('.tabla-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === modo);
+  });
+
+  // Actualizar el subtítulo del modo PAES
+  const modoActualElement = document.getElementById('modo-actual');
+  const modoPaesTexto = document.getElementById('modo-paes-texto');
+  
+  if (modo === 'paes' && submodo) {
+    modoPaesTexto.textContent = modosPaesNombres[submodo] || '';
+    modoActualElement.classList.remove('hidden');
+    modoActualElement.classList.add('visible');
+  } else {
+    modoActualElement.classList.remove('visible');
+    modoActualElement.classList.add('hidden');
+  }
+
+  // Si es modo PAES, actualizar estado del ítem seleccionado
+  if (modo === 'paes' && submodo) {
+    document.querySelectorAll('.paes-dropdown-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.paesMode === submodo);
+    });
+  }
+  
+  // Valores por defecto
+  const defaultConfig = {
+    puntajeMax: 100,
+    exigencia: 60,
+    notaMin: 1.0,
+    notaMax: 7.0,
+    notaAprob: 4.0
+  };
+
+  // Obtener la configuración del modo seleccionado
+  let config = { ...defaultConfig };
+  
+  try {
+    if (modo === 'paes' && submodo && configuracionesModo?.paes?.[submodo]) {
+      const paesConfig = configuracionesModo.paes[submodo];
+      config = {
+        puntajeMax: Number(paesConfig?.puntajeMax) || defaultConfig.puntajeMax,
+        exigencia: Number(paesConfig?.exigencia) || defaultConfig.exigencia,
+        notaMin: Number(paesConfig?.notaMin) || defaultConfig.notaMin,
+        notaMax: Number(paesConfig?.notaMax) || defaultConfig.notaMax,
+        notaAprob: Number(paesConfig?.notaAprob) || defaultConfig.notaAprob
+      };
+    } else if (configuracionesModo?.[modo]) {
+      const modoConfig = configuracionesModo[modo];
+      config = {
+        puntajeMax: Number(modoConfig?.puntajeMax) || defaultConfig.puntajeMax,
+        exigencia: Number(modoConfig?.exigencia) || defaultConfig.exigencia,
+        notaMin: Number(modoConfig?.notaMin) || defaultConfig.notaMin,
+        notaMax: Number(modoConfig?.notaMax) || defaultConfig.notaMax,
+        notaAprob: Number(modoConfig?.notaAprob) || defaultConfig.notaAprob
+      };
+    }
+  } catch (error) {
+    console.warn('Error al cargar la configuración:', error);
+    // Mantener los valores por defecto si hay error
+  }
+
+  // Asegurarse de que todos los valores sean números válidos
+  config.puntajeMax = Math.max(1, Number(config.puntajeMax) || defaultConfig.puntajeMax);
+  config.exigencia = Math.min(100, Math.max(1, Number(config.exigencia) || defaultConfig.exigencia));
+  config.notaMin = Math.max(1, Math.min(7, Number(config.notaMin) || defaultConfig.notaMin));
+  config.notaMax = Math.max(config.notaMin + 0.1, Math.min(7, Number(config.notaMax) || defaultConfig.notaMax));
+  config.notaAprob = Math.max(config.notaMin, Math.min(config.notaMax, Number(config.notaAprob) || defaultConfig.notaAprob));
+
+  // Aplicar la configuración a los inputs con validación
+  const elementos = {
+    puntajeMax: document.getElementById('puntajeMax'),
+    exigencia: document.getElementById('exigencia'),
+    notaMin: document.getElementById('notaMin'),
+    notaMax: document.getElementById('notaMax'),
+    notaAprob: document.getElementById('notaAprob')
+  };
+
+  // Actualizar los valores solo si los elementos existen
+  if (elementos.puntajeMax) elementos.puntajeMax.value = config.puntajeMax;
+  if (elementos.exigencia) elementos.exigencia.value = config.exigencia;
+  if (elementos.notaMin) elementos.notaMin.value = config.notaMin.toFixed(1);
+  if (elementos.notaMax) elementos.notaMax.value = config.notaMax.toFixed(1);
+  if (elementos.notaAprob) elementos.notaAprob.value = config.notaAprob.toFixed(1);
+  
+  // Regenerar la tabla con la nueva configuración
+  generarTablaEscala();
+}
+
+// Agregar event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Event listeners para los botones de modo
+  document.querySelectorAll('.tabla-mode-btn').forEach(btn => {
+    if (!btn.classList.contains('has-dropdown')) {
+      btn.addEventListener('click', () => {
+        cambiarModoTabla(btn.dataset.mode);
+      });
+    }
+  });
+
+  // Event listeners para los items del dropdown de PAES
+  document.querySelectorAll('.paes-dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+      cambiarModoTabla('paes', item.dataset.paesMode);
+      document.querySelector('.paes-dropdown').classList.remove('show');
+      document.querySelector('.tabla-mode-btn.has-dropdown').classList.remove('active');
+    });
+  });
+
+  // Cerrar dropdown al hacer click fuera
+  document.addEventListener('click', togglePaesDropdown);
+});
+
+// Conversor de puntaje a nota
+document.addEventListener('DOMContentLoaded', function() {
+  const puntajeInput = document.getElementById('puntaje-input');
+  const notaResult = document.getElementById('nota-result');
+
+  if (!puntajeInput || !notaResult) return;
+
+  function obtenerConfiguracionModo() {
+    const modo = modoTablaActual;
+    let config;
+
+    if (modo === 'paes' && submodoPaesActual) {
+      config = configuracionesModo.paes[submodoPaesActual];
+    } else {
+      config = configuracionesModo[modo];
+    }
+
+    // Si no hay configuración específica, usar valores por defecto
+    return {
+      puntajeMax: config?.puntajeMax || 100,
+      exigencia: config?.exigencia || 60,
+      notaMin: config?.notaMin || 1.0,
+      notaMax: config?.notaMax || 7.0,
+      notaAprob: config?.notaAprob || 4.0
+    };
+  }
+
+  function convertirPuntajeANota(puntaje) {
+    // Obtener configuración según el modo actual
+    const config = obtenerConfiguracionModo();
+    
+    // Obtener valores actuales de los inputs (si están modificados por el usuario)
+    const puntajeMax = parseFloat(document.getElementById('puntajeMax').value) || config.puntajeMax;
+    const notaMin = parseFloat(document.getElementById('notaMin').value) || config.notaMin;
+    const notaMax = parseFloat(document.getElementById('notaMax').value) || config.notaMax;
+    const notaAprob = parseFloat(document.getElementById('notaAprob').value) || config.notaAprob;
+    const exigencia = (parseFloat(document.getElementById('exigencia').value) || config.exigencia) / 100;
+    
+    if (isNaN(puntaje) || puntaje > puntajeMax || puntaje < 0) {
+      return 'Inválido';
+    }
+    
+    const puntajeAprobacion = puntajeMax * exigencia;
+    let nota;
+    
+    if (puntaje >= puntajeAprobacion) {
+      nota = notaAprob + ((puntaje - puntajeAprobacion) * (notaMax - notaAprob)) / (puntajeMax - puntajeAprobacion);
+    } else {
+      nota = notaMin + (puntaje * (notaAprob - notaMin)) / puntajeAprobacion;
+    }
+    
+    nota = Math.max(notaMin, Math.min(notaMax, nota));
+    return nota.toFixed(1);
+  }
+
+  function actualizarNota() {
+    const puntaje = parseFloat(puntajeInput.value);
+    
+    if (puntajeInput.value === '' || isNaN(puntaje)) {
+      notaResult.textContent = '-.-';
+      notaResult.style.color = 'var(--text-light)';
+      return;
+    }
+
+    const nota = convertirPuntajeANota(puntaje);
+    notaResult.textContent = nota;
+    
+    const config = obtenerConfiguracionModo();
+    const notaAprob = parseFloat(document.getElementById('notaAprob').value) || config.notaAprob;
+    
+    if (nota !== 'Inválido' && parseFloat(nota) >= notaAprob) {
+      notaResult.style.color = 'var(--text-light)';
+    } else {
+      notaResult.style.color = 'var(--del-btn-bgg)';
+    }
+  }
+
+  // Event listener para el input de puntaje
+  puntajeInput.addEventListener('input', actualizarNota);
+  
+  // Event listeners para los parámetros
+  ['puntajeMax', 'notaMin', 'notaMax', 'exigencia', 'notaAprob'].forEach(id => {
+    const elemento = document.getElementById(id);
+    if (elemento) {
+      elemento.addEventListener('input', actualizarNota);
+    }
+  });
+
+  // Event listeners para los botones de modo
+  document.querySelectorAll('.tabla-mode-btn').forEach(btn => {
+    if (!btn.classList.contains('has-dropdown')) {
+      btn.addEventListener('click', actualizarNota);
+    }
+  });
+
+  // Event listeners para los items del dropdown de PAES
+  document.querySelectorAll('.paes-dropdown-item').forEach(item => {
+    item.addEventListener('click', actualizarNota);
+  });
+});
+
+// Control de visibilidad de columnas
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleBtn = document.getElementById('toggle-columnas');
+  const tablaEscala = document.getElementById('tablaEscala');
+  const columnasBtnTexto = toggleBtn.querySelector('.columnas-texto');
+  
+  let columnasOcultas = localStorage.getItem('columnasOcultas') === 'true';
+  
+  function actualizarEstadoColumnas() {
+    if (columnasOcultas) {
+      tablaEscala.classList.add('columnas-ocultas');
+      toggleBtn.classList.add('menos');
+      columnasBtnTexto.textContent = 'Mostrar tabla';
+    } else {
+      tablaEscala.classList.remove('columnas-ocultas');
+      toggleBtn.classList.remove('menos');
+      columnasBtnTexto.textContent = 'Ocultar tabla';
+    }
+  }
+  
+  // Aplicar estado inicial
+  actualizarEstadoColumnas();
+  
+  toggleBtn.addEventListener('click', function() {
+    columnasOcultas = !columnasOcultas;
+    localStorage.setItem('columnasOcultas', columnasOcultas);
+    actualizarEstadoColumnas();
+  });
+});
+
+// Tabla de conversión PAES Competencia Lectora
+const tablaPAESCompetencia = {
+  0: 100, 1: 186, 2: 210, 3: 232, 4: 253, 5: 271,
+  6: 288, 7: 304, 8: 322, 9: 339, 10: 355, 11: 369,
+  12: 380, 13: 391, 14: 402, 15: 415, 16: 430, 17: 446,
+  18: 460, 19: 471, 20: 479, 21: 486, 22: 494, 23: 502,
+  24: 514, 25: 528, 26: 543, 27: 557, 28: 569, 29: 577,
+  30: 583, 31: 589, 32: 596, 33: 605, 34: 617, 35: 631,
+  36: 647, 37: 660, 38: 671, 39: 680, 40: 687, 41: 694,
+  42: 703, 43: 715, 44: 730, 45: 746, 46: 761, 47: 773,
+  48: 785, 49: 795, 50: 808, 51: 823, 52: 840, 53: 858,
+  54: 876, 55: 893, 56: 911, 57: 931, 58: 954, 59: 978,
+  60: 1000
+};
+
+// Tabla de conversión PAES M1 Matemáticas
+const tablaPAESM1 = {
+  0: 100, 1: 173, 2: 199, 3: 222, 4: 244, 5: 265,
+  6: 284, 7: 301, 8: 316, 9: 331, 10: 346, 11: 362,
+  12: 378, 13: 391, 14: 402, 15: 412, 16: 422, 17: 434,
+  18: 447, 19: 462, 20: 476, 21: 487, 22: 496, 23: 503,
+  24: 510, 25: 518, 26: 529, 27: 542, 28: 557, 29: 570,
+  30: 581, 31: 589, 32: 596, 33: 602, 34: 610, 35: 621,
+  36: 634, 37: 648, 38: 662, 39: 674, 40: 683, 41: 691,
+  42: 700, 43: 710, 44: 723, 45: 738, 46: 753, 47: 767,
+  48: 779, 49: 792, 50: 805, 51: 821, 52: 838, 53: 856,
+  54: 875, 55: 894, 56: 915, 57: 938, 58: 964, 59: 992,
+  60: 1000
+};
+
+// Tabla de conversión PAES M2 Matemáticas
+const tablaPAESM2 = {
+  0: 100, 1: 161, 2: 192, 3: 220, 4: 245, 5: 268,
+  6: 289, 7: 308, 8: 326, 9: 344, 10: 362, 11: 378,
+  12: 392, 13: 405, 14: 418, 15: 432, 16: 448, 17: 462,
+  18: 475, 19: 486, 20: 495, 21: 506, 22: 519, 23: 533,
+  24: 547, 25: 560, 26: 571, 27: 580, 28: 590, 29: 601,
+  30: 614, 31: 629, 32: 643, 33: 656, 34: 667, 35: 678,
+  36: 690, 37: 704, 38: 719, 39: 735, 40: 750, 41: 765,
+  42: 780, 43: 797, 44: 816, 45: 836, 46: 857, 47: 879,
+  48: 903, 49: 1000
+};
+
+// Tabla de conversión PAES Ciencias
+const tablaPAESCiencias = {
+  0: 100, 1: 105, 2: 123, 3: 144, 4: 164, 5: 183,
+  6: 201, 7: 218, 8: 233, 9: 246, 10: 260, 11: 273,
+  12: 288, 13: 301, 14: 313, 15: 324, 16: 332, 17: 341,
+  18: 351, 19: 363, 20: 376, 21: 388, 22: 399, 23: 406,
+  24: 413, 25: 419, 26: 425, 27: 433, 28: 443, 29: 455,
+  30: 467, 31: 478, 32: 487, 33: 494, 34: 499, 35: 503,
+  36: 508, 37: 515, 38: 523, 39: 535, 40: 547, 41: 559,
+  42: 569, 43: 576, 44: 582, 45: 586, 46: 591, 47: 597,
+  48: 606, 49: 616, 50: 629, 51: 641, 52: 652, 53: 660,
+  54: 667, 55: 673, 56: 680, 57: 689, 58: 700, 59: 713,
+  60: 726, 61: 738, 62: 748, 63: 758, 64: 768, 65: 779,
+  66: 793, 67: 808, 68: 823, 69: 838, 70: 853, 71: 870,
+  72: 889, 73: 909, 74: 931, 75: 1000
+};
+
+// Tabla de conversión PAES Historia
+const tablaPAESHistoria = {
+  0: 100, 1: 106, 2: 135, 3: 161, 4: 184, 5: 206,
+  6: 227, 7: 248, 8: 266, 9: 282, 10: 297, 11: 311,
+  12: 327, 13: 344, 14: 360, 15: 374, 16: 385, 17: 395,
+  18: 404, 19: 415, 20: 429, 21: 444, 22: 460, 23: 473,
+  24: 484, 25: 492, 26: 499, 27: 506, 28: 515, 29: 527,
+  30: 542, 31: 557, 32: 572, 33: 583, 34: 591, 35: 598,
+  36: 605, 37: 614, 38: 625, 39: 639, 40: 655, 41: 670,
+  42: 683, 43: 693, 44: 703, 45: 712, 46: 724, 47: 739,
+  48: 756, 49: 772, 50: 788, 51: 802, 52: 817, 53: 834,
+  54: 853, 55: 873, 56: 895, 57: 917, 58: 941, 59: 968,
+  60: 1000
+};
+
+// Función para mostrar la tabla PAES según el modo
+function mostrarTablaPAES() {
+  const modo = submodoPaesActual;
+  let tabla;
+  let titulo;
+  
+  switch(modo) {
+    case 'competencia-lectora':
+      tabla = tablaPAESCompetencia;
+      titulo = 'Competencia Lectora';
+      break;
+    case 'm1':
+      tabla = tablaPAESM1;
+      titulo = 'M1 Matemáticas';
+      break;
+    case 'm2':
+      tabla = tablaPAESM2;
+      titulo = 'M2 Matemáticas';
+      break;
+    case 'ciencias':
+      tabla = tablaPAESCiencias;
+      titulo = 'Ciencias';
+      break;
+    case 'historia':
+      tabla = tablaPAESHistoria;
+      titulo = 'Historia';
+      break;
+    default:
+      return;
+  }
+  
+  const tablaContainer = document.createElement('div');
+  tablaContainer.className = 'tabla-paes-container';
+  tablaContainer.innerHTML = `
+    <h3>Tabla de Conversión - ${titulo}</h3>
+    <div class="tabla-paes-scroll">
+      <table class="tabla-paes">
+        <thead>
+          <tr>
+            <th>Respuestas Correctas</th>
+            <th>Puntaje PAES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(tabla)
+            .map(([correctas, puntaje]) => `
+              <tr>
+                <td>${correctas}</td>
+                <td>${puntaje}</td>
+              </tr>
+            `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  
+  const tablaPAESExistente = document.querySelector('.tabla-paes-container');
+  if (tablaPAESExistente) {
+    tablaPAESExistente.remove();
+  }
+  
+  document.querySelector('.main').appendChild(tablaContainer);
+}
+
+// Función para calcular puntaje PAES según el modo
+function calcularPuntajePAES(respuestasCorrectas) {
+  let tabla;
+  switch(submodoPaesActual) {
+    case 'competencia-lectora':
+      tabla = tablaPAESCompetencia;
+      break;
+    case 'm1':
+      tabla = tablaPAESM1;
+      break;
+    case 'm2':
+      tabla = tablaPAESM2;
+      break;
+    case 'ciencias':
+      tabla = tablaPAESCiencias;
+      break;
+    case 'historia':
+      tabla = tablaPAESHistoria;
+      break;
+    default:
+      return 100;
+  }
+  return tabla[respuestasCorrectas] || 100;
+}
+
+// Conversor de respuestas a puntaje PAES
+document.addEventListener('DOMContentLoaded', function() {
+  const respuestasInput = document.getElementById('respuestas-input');
+  const puntajePaesResult = document.getElementById('puntaje-paes-result');
+  const conversorPaes = document.getElementById('conversor-paes');
+
+  if (!respuestasInput || !puntajePaesResult || !conversorPaes) return;
+
+  function actualizarPuntajePaes() {
+    const respuestas = parseInt(respuestasInput.value);
+    
+    if (respuestasInput.value === '' || isNaN(respuestas)) {
+      puntajePaesResult.textContent = '-';
+      puntajePaesResult.style.color = 'var(--text-light)';
+      return;
+    }
+
+    let maxRespuestas;
+    switch(submodoPaesActual) {
+      case 'm2':
+        maxRespuestas = 49;
+        break;
+      case 'ciencias':
+        maxRespuestas = 75;
+        break;
+      case 'historia':
+      case 'competencia-lectora':
+      case 'm1':
+        maxRespuestas = 60;
+        break;
+      default:
+        maxRespuestas = 60;
+    }
+
+    if (respuestas < 0 || respuestas > maxRespuestas) {
+      puntajePaesResult.textContent = 'Inválido';
+      puntajePaesResult.style.color = 'var(--del-btn-bgg)';
+      return;
+    }
+
+    let tabla;
+    switch(submodoPaesActual) {
+      case 'competencia-lectora':
+        tabla = tablaPAESCompetencia;
+        break;
+      case 'm1':
+        tabla = tablaPAESM1;
+        break;
+      case 'm2':
+        tabla = tablaPAESM2;
+        break;
+      case 'ciencias':
+        tabla = tablaPAESCiencias;
+        break;
+      case 'historia':
+        tabla = tablaPAESHistoria;
+        break;
+      default:
+        return;
+    }
+    
+    const puntaje = tabla[respuestas];
+    puntajePaesResult.textContent = puntaje;
+    
+    if (puntaje >= 500) {
+      puntajePaesResult.style.color = 'var(--text-light)';
+    } else {
+      puntajePaesResult.style.color = 'var(--del-btn-bgg)';
+    }
+  }
+
+  // Event listener para el input de respuestas
+  respuestasInput.addEventListener('input', actualizarPuntajePaes);
+
+  // Mostrar/ocultar el conversor según el modo
+  function actualizarVisibilidadConversor() {
+    if (modoTablaActual === 'paes' && (submodoPaesActual === 'competencia-lectora' || submodoPaesActual === 'm1' || submodoPaesActual === 'm2' || submodoPaesActual === 'ciencias' || submodoPaesActual === 'historia')) {
+      conversorPaes.style.display = 'block';
+      // Actualizar el placeholder según el modo
+      let maxRespuestas;
+      switch(submodoPaesActual) {
+        case 'm2':
+          maxRespuestas = 49;
+          break;
+        case 'ciencias':
+          maxRespuestas = 75;
+          break;
+        case 'historia':
+        case 'competencia-lectora':
+        case 'm1':
+          maxRespuestas = 60;
+          break;
+        default:
+          maxRespuestas = 60;
+      }
+      respuestasInput.placeholder = `0-${maxRespuestas}`;
+      respuestasInput.max = maxRespuestas;
+    } else {
+      conversorPaes.style.display = 'none';
+    }
+  }
+
+  // Event listeners para los botones de modo
+  document.querySelectorAll('.tabla-mode-btn').forEach(btn => {
+    if (!btn.classList.contains('has-dropdown')) {
+      btn.addEventListener('click', actualizarVisibilidadConversor);
+    }
+  });
+
+  // Event listeners para los items del dropdown de PAES
+  document.querySelectorAll('.paes-dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+      actualizarVisibilidadConversor();
+      actualizarPuntajePaes(); // Actualizar el resultado cuando cambie el modo
+    });
+  });
+
+  // Inicializar visibilidad
+  actualizarVisibilidadConversor();
+});
+
+// Modificar la función existente de cambio de modo
+document.querySelectorAll('.paes-dropdown-item').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const modo = this.dataset.paesMode;
+    if (modo === 'competencia-lectora' || modo === 'm1' || modo === 'm2' || modo === 'ciencias' || modo === 'historia') {
+      // Mostrar la tabla PAES
+      mostrarTablaPAES();
+      // Cambiar el modo de la calculadora
+      document.querySelector('.modo-actual').classList.add('visible');
+    } else {
+      // Ocultar la tabla si existe
+      const tablaPAES = document.querySelector('.tabla-paes-container');
+      if (tablaPAES) {
+        tablaPAES.remove();
+      }
+    }
+  });
+});
+
+// Función para cambiar entre modos
+function cambiarModo(modo) {
+  const paesInput = document.getElementById('paes-input');
+  const notasNormales = document.getElementById('notas-normales');
+  const tablaPAES = document.querySelector('.tabla-paes-container');
+
+  if (modo === 'competencia-lectora' || modo === 'm1' || modo === 'm2' || modo === 'ciencias' || modo === 'historia') {
+    paesInput.style.display = 'block';
+    notasNormales.style.display = 'none';
+    mostrarTablaPAES();
+  } else {
+    paesInput.style.display = 'none';
+    notasNormales.style.display = 'block';
+    if (tablaPAES) {
+      tablaPAES.remove();
+    }
+  }
+}
