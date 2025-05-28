@@ -1,4 +1,4 @@
-.side-menu {.side-menu {
+.side-menu {
   position: fixed;
   top: 0;
   left: 0;
@@ -4043,7 +4043,6 @@ body.theme-oscuro .inventario-container h2 {
 }
 
 /* Indicadores de múltiples eventos y demás estilos previos */
-// ... existing code ...
 
 /* Estados de los libros */
 .estado-disponible {
@@ -4100,6 +4099,15 @@ body.theme-oscuro .inventario-container h2 {
 }
 
 
+
+
+
+
+
+
+
+
+  
 
 
 
