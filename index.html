@@ -47,6 +47,27 @@
       </span>
       <span class="menu-label">Múltiples Promedios</span>
     </a>
+    <a href="#calendario" id="menu-calendario" data-tooltip="Calendario">
+      <span class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </span>
+      <span class="menu-label">Calendario</span>
+    </a>
+    <a href="#inventario" id="menu-inventario" data-tooltip="Inventario de Libros">
+      <span class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+          <line x1="12" y1="10" x2="12" y2="16"></line>
+          <line x1="9" y1="13" x2="15" y2="13"></line>
+        </svg>
+      </span>
+      <span class="menu-label">Inventario de Libros</span>
+    </a>
   </nav>
 
   
@@ -354,7 +375,7 @@
         <button class="btn-add-section" onclick="addSection()"> Agregar Sección</button>
         <button class="btn-remove-section" onclick="removeSection()">Eliminar Sección</button>
         <input type="file" id="input-excel-multi" accept=".xls,.xlsx" style="display:none" />
-        <button id="btn-cargar-excel-multi" type="button">Cargar Excel</button>
+        <button id="btn-cargar-excel-multi" type="button">Cargar Curso (Excel)</button>
         <button id="btn-descargar-excel-multi" type="button">Descargar Excel</button>
       </div>
 
@@ -385,5 +406,216 @@
     </div>
   </div>
 
+  <div id="calendario-panel" style="display:none;">
+    <div class="container">
+      <h1>Calendario de Eventos</h1>
+      
+      <div class="calendario-container">
+        <div class="calendario-wrapper">
+          <div class="calendario-header">
+            <button id="prev-month">←</button>
+            <h2 id="month-year">Mes Año</h2>
+            <button id="next-month">→</button>
+          </div>
+          
+          <div class="calendario-dias">
+            <div class="dia-semana">Dom</div>
+            <div class="dia-semana">Lun</div>
+            <div class="dia-semana">Mar</div>
+            <div class="dia-semana">Mié</div>
+            <div class="dia-semana">Jue</div>
+            <div class="dia-semana">Vie</div>
+            <div class="dia-semana">Sáb</div>
+          </div>
+          
+          <div id="calendario-grid" class="calendario-grid">
+            <!-- Los días se generarán dinámicamente -->
+          </div>
+        </div>
+
+        <div class="eventos-panel">
+          <h3>Próximos Eventos</h3>
+          <div class="eventos-filtro">
+            <select id="filtro-eventos">
+              <option value="todos">Todos los eventos</option>
+              <option value="hoy">Hoy</option>
+              <option value="semana">Esta semana</option>
+              <option value="mes">Este mes</option>
+            </select>
+            <div style="display:flex;gap:4px;margin-top:6px;">
+              <select id="filtro-ramo" style="font-size:0.95em;padding:2px 6px;"><option value="">Ramo</option></select>
+              <select id="filtro-curso" style="font-size:0.95em;padding:2px 6px;"><option value="">Curso</option></select>
+              <select id="filtro-sala" style="font-size:0.95em;padding:2px 6px;"><option value="">Sala</option></select>
+            </div>
+          </div>
+          <div id="lista-eventos" class="lista-eventos">
+            <!-- Los eventos se generarán dinámicamente -->
+          </div>
+          <button id="btn-cargar-excel" class="btn-agregar" style="margin-top:10px;">Cargar desde Excel</button>
+          <input type="file" id="input-cargar-excel" accept=".xls,.xlsx" style="display:none;" />
+          <button id="btn-descargar-plantilla-excel" class="btn-agregar" style="margin-top:10px;">Descargar plantilla Excel</button>
+          <button id="btn-exportar-eventos-excel" class="btn-agregar" style="margin-top:10px;">Exportar eventos a Excel</button>
+        </div>
+      </div>
+
+      <!-- Modal para agregar eventos -->
+      <div id="evento-modal" class="modal">
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <h3 class="modal-title">Agregar Evento</h3>
+          <form id="evento-form">
+            <div class="form-group">
+              <label for="evento-titulo">Título</label>
+              <input type="text" id="evento-titulo" required>
+            </div>
+            <div class="form-group">
+              <label for="evento-fecha">Fecha</label>
+              <input type="date" id="evento-fecha" required>
+            </div>
+            <div class="form-group">
+              <label for="evento-hora">Hora</label>
+              <input type="time" id="evento-hora" required>
+            </div>
+            <div class="form-group">
+              <label for="evento-tipo">Tipo de Evento</label>
+              <select id="evento-tipo" required>
+                <option value="">Seleccionar tipo</option>
+                <option value="prueba">Prueba</option>
+                <option value="feria">Feria</option>
+                <option value="celebracion">Celebración</option>
+                <option value="feriado">Feriado</option>
+                <option value="dia-institucional">Día Institucional</option>
+                <option value="aniversario">Aniversario</option>
+                <option value="reunion">Reunión</option>
+                <option value="ceremonia">Ceremonia</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="evento-ramo">Ramo</label>
+              <input type="text" id="evento-ramo" required>
+            </div>
+            <div class="form-group">
+              <label for="evento-curso">Curso</label>
+              <input type="text" id="evento-curso" required>
+            </div>
+            <div class="form-group">
+              <label for="evento-lugar">Lugar</label>
+              <input type="text" id="evento-lugar" required>
+            </div>
+            <div class="form-group">
+              <label for="evento-descripcion">Descripción</label>
+              <textarea id="evento-descripcion"></textarea>
+            </div>
+            <button type="submit">Guardar Evento</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de Inventario -->
+  <div id="inventario-panel" class="panel" style="display: none;">
+    <div class="inventario-container">
+      <h2>Inventario de Libros</h2>
+      
+      <div class="inventario-controls">
+        <div class="search-controls">
+          <div class="search-group">
+            <select id="filtro-busqueda" class="select-busqueda">
+              <option value="estado">Estado</option>
+              <option value="codigo">Código</option>
+              <option value="titulo">Título</option>
+              <option value="isbn">ISBN</option>
+              <option value="autor">Autor</option>
+              <option value="ubicacion">Ubicación Física</option>
+              <option value="stock">Stock</option>
+              <option value="codigomineduc">Código Mineduc</option>
+            </select>
+            <input type="text" id="buscar-libro" placeholder="Buscar libro..." class="input-busqueda">
+          </div>
+        </div>
+        <button id="btn-agregar-libro" class="btn-agregar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Agregar Libro
+        </button>
+      </div>
+
+      <div class="tabla-container">
+        <table class="tabla-libros">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Código</th>
+              <th>Título</th>
+              <th>ISBN</th>
+              <th>Autor</th>
+              <th>Ubicación Física</th>
+              <th>Stock</th>
+              <th>Código Mineduc</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="libros-lista">
+            <!-- Los libros se agregarán aquí dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal para Agregar/Editar Libro -->
+    <div id="libro-modal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Agregar/Editar Libro</h3>
+        <form id="libro-form">
+          <div class="form-group">
+            <label for="libro-estado">Estado:</label>
+            <select id="libro-estado" required>
+              <option value="disponible">Disponible</option>
+              <option value="prestado">Prestado</option>
+              <option value="atrasado">Atrasado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="libro-codigo">Código:</label>
+            <input type="text" id="libro-codigo" required>
+          </div>
+          <div class="form-group">
+            <label for="libro-titulo">Título:</label>
+            <input type="text" id="libro-titulo" required>
+          </div>
+          <div class="form-group">
+            <label for="libro-isbn">ISBN:</label>
+            <input type="text" id="libro-isbn" required>
+          </div>
+          <div class="form-group">
+            <label for="libro-autor">Autor:</label>
+            <input type="text" id="libro-autor" required>
+          </div>
+          <div class="form-group">
+            <label for="libro-ubicacion">Ubicación Física:</label>
+            <input type="text" id="libro-ubicacion" required>
+          </div>
+          <div class="form-group">
+            <label for="libro-stock">Stock:</label>
+            <input type="number" id="libro-stock" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="libro-codigomineduc">Código Mineduc:</label>
+            <input type="text" id="libro-codigomineduc" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-guardar">Guardar</button>
+            <button type="button" class="btn-cancelar" onclick="document.getElementById('libro-modal').style.display='none'">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
+
