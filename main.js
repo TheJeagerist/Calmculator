@@ -302,6 +302,47 @@ function initializeElements() {
 
 // Inicializar el panel activo según la URL o mostrar calculadora por defecto
 function initializePanels() {
+  // Inicializar eventos del menú
+  document.getElementById('menu-calculadora').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-calculadora');
+    document.getElementById('calc-panel').style.display = 'block';
+  });
+
+  document.getElementById('menu-escala').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-escala');
+    document.getElementById('escala-panel').style.display = 'block';
+  });
+
+  document.getElementById('menu-multi').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-multi');
+    document.getElementById('multi-panel').style.display = 'block';
+  });
+
+  document.getElementById('menu-calendario').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-calendario');
+    document.getElementById('calendario-panel').style.display = 'block';
+    renderCalendario();
+  });
+
+  document.getElementById('menu-inventario').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-inventario');
+    document.getElementById('inventario-panel').style.display = 'block';
+  });
+
+  // Mostrar el panel de calculadora por defecto y activar su botón
+  document.getElementById('calc-panel').style.display = 'block';
+  updateActiveMenuItem('menu-calculadora');
+
   if (!initializeElements()) return;
 
   const hash = window.location.hash;
@@ -745,7 +786,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let nota;
     
     if (puntaje >= puntajeAprobacion) {
-      nota = notaAprob + ((puntaje - puntajeAprobacion) * (notaMax - notaAprob)) / (puntajeMax - puntajeAprobacion);
+      nota = notaAprob + ((puntaje - puntajeAprob) * (notaMax - notaAprob)) / (puntajeMax - puntajeAprobacion);
     } else {
       nota = notaMin + (puntaje * (notaAprob - notaMin)) / puntajeAprobacion;
     }
@@ -837,7 +878,7 @@ const tablaPAESCompetencia = {
   12: 380, 13: 391, 14: 402, 15: 415, 16: 430, 17: 446,
   18: 460, 19: 471, 20: 479, 21: 486, 22: 494, 23: 502,
   24: 514, 25: 528, 26: 543, 27: 557, 28: 569, 29: 577,
-  30: 583, 31: 589, 32: 596, 33: 605, 34: 617, 35: 631,
+  30: 583, 31: 589, 32: 596, 33: 505, 34: 617, 35: 631,
   36: 647, 37: 660, 38: 671, 39: 680, 40: 687, 41: 694,
   42: 703, 43: 715, 44: 730, 45: 746, 46: 761, 47: 773,
   48: 785, 49: 795, 50: 808, 51: 823, 52: 840, 53: 858,
@@ -1644,3 +1685,1066 @@ document.addEventListener('DOMContentLoaded', function() {
   //   }
   // }
 });
+
+// Calendario
+let currentDate = new Date();
+let eventos = JSON.parse(localStorage.getItem('eventos')) || {};
+
+function actualizarListaEventos(filtro = 'todos') {
+  const listaEventos = document.getElementById('lista-eventos');
+  listaEventos.innerHTML = '';
+  
+  // Obtener valores de los filtros minimalistas
+  const filtroRamo = document.getElementById('filtro-ramo');
+  const filtroCurso = document.getElementById('filtro-curso');
+  const filtroSala = document.getElementById('filtro-sala');
+  let ramoSel = filtroRamo && filtroRamo.value ? filtroRamo.value : '';
+  let cursoSel = filtroCurso && filtroCurso.value ? filtroCurso.value : '';
+  let salaSel = filtroSala && filtroSala.value ? filtroSala.value : '';
+  
+  // Obtener todos los eventos y ordenarlos por fecha y hora
+  const todosLosEventos = [];
+  for (const fecha in eventos) {
+    eventos[fecha].forEach((evento, index) => {
+      todosLosEventos.push({
+        fecha,
+        index,
+        ...evento
+      });
+    });
+  }
+  
+  todosLosEventos.sort((a, b) => {
+    const fechaA = new Date(a.fecha + 'T' + a.hora + ':00-04:00');
+    const fechaB = new Date(b.fecha + 'T' + b.hora + ':00-04:00');
+    return fechaA - fechaB;
+  });
+  
+  // Filtrar eventos según el criterio seleccionado
+  let eventosFiltrados = filtrarEventos(todosLosEventos, filtro);
+  
+  // Aplicar filtros minimalistas
+  if (ramoSel) eventosFiltrados = eventosFiltrados.filter(ev => ev.ramo === ramoSel);
+  if (cursoSel) eventosFiltrados = eventosFiltrados.filter(ev => ev.curso === cursoSel);
+  if (salaSel) eventosFiltrados = eventosFiltrados.filter(ev => ev.lugar === salaSel);
+  
+  // Mostrar los eventos filtrados
+  eventosFiltrados.forEach(evento => {
+    const eventoElement = document.createElement('div');
+    eventoElement.className = `evento-item evento-${evento.tipo}`;
+    
+    // Validar fecha antes de formatear
+    let fechaFormateada = 'Fecha inválida';
+    if (evento.fecha && /^\d{4}-\d{2}-\d{2}$/.test(evento.fecha)) {
+      const [year, month, day] = evento.fecha.split('-').map(Number);
+      const fechaObj = new Date(year, month - 1, day);
+      if (!isNaN(fechaObj.getTime())) {
+        fechaFormateada = new Intl.DateTimeFormat('es-CL', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'America/Santiago'
+        }).format(fechaObj);
+      }
+    }
+    
+    // Mostrar la hora en formato HH:mm si es serial
+    let horaFormateada = evento.hora;
+    if (typeof horaFormateada === 'number' || (!isNaN(Number(horaFormateada)) && horaFormateada !== '')) {
+      let serial = Number(horaFormateada);
+      let totalMinutes = Math.round(serial * 24 * 60);
+      let h = Math.floor(totalMinutes / 60);
+      let m = totalMinutes % 60;
+      horaFormateada = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+    
+    eventoElement.innerHTML = `
+      <div class="evento-header">
+        <div class="evento-fecha">${fechaFormateada}</div>
+        <button class="btn-eliminar-evento" onclick="eliminarEvento('${evento.fecha}', ${evento.index})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="evento-titulo">${evento.titulo}</div>
+      <div class="evento-hora">${horaFormateada}</div>
+      <div class="evento-detalles">
+        <div class="evento-tipo">Tipo: ${evento.tipo}</div>
+        <div class="evento-ramo">Ramo: ${evento.ramo}</div>
+        <div class="evento-curso">Curso: ${evento.curso}</div>
+        <div class="evento-lugar">Lugar: ${evento.lugar}</div>
+      </div>
+      ${evento.descripcion ? `<div class="evento-descripcion">${evento.descripcion}</div>` : ''}
+    `;
+    
+    listaEventos.appendChild(eventoElement);
+  });
+  
+  if (eventosFiltrados.length === 0) {
+    listaEventos.innerHTML = '<div class="no-eventos">No hay eventos para mostrar</div>';
+  }
+}
+
+function eliminarEvento(fecha, index) {
+  // Verificar que la fecha y el índice existan
+  if (eventos[fecha] && eventos[fecha][index] !== undefined) {
+    // Eliminar el evento
+    eventos[fecha].splice(index, 1);
+    
+    // Si no quedan eventos en esa fecha, eliminar la fecha
+    if (eventos[fecha].length === 0) {
+      delete eventos[fecha];
+    }
+    
+    // Guardar en localStorage
+    localStorage.setItem('eventos', JSON.stringify(eventos));
+    
+    // Actualizar vistas
+    renderCalendario();
+    actualizarListaEventos(document.getElementById('filtro-eventos').value);
+  }
+}
+
+function filtrarEventos(eventos, filtro) {
+  // Usar la fecha de Chile obtenida por internet si está disponible
+  const hoy = fechaChileInternet ? new Date(fechaChileInternet) : new Date();
+  hoy.setHours(0, 0, 0, 0);
+  
+  const inicioSemana = new Date(hoy);
+  inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+  
+  const finSemana = new Date(inicioSemana);
+  finSemana.setDate(inicioSemana.getDate() + 6);
+  
+  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  
+  return eventos.filter(evento => {
+    const fechaEvento = new Date(evento.fecha);
+    fechaEvento.setHours(0, 0, 0, 0);
+    
+    switch (filtro) {
+      case 'hoy':
+        return fechaEvento.getTime() === hoy.getTime();
+      case 'semana':
+        return fechaEvento >= inicioSemana && fechaEvento <= finSemana;
+      case 'mes':
+        return fechaEvento >= inicioMes && fechaEvento <= finMes;
+      default:
+        return true;
+    }
+  });
+}
+
+function initCalendario() {
+  document.getElementById('menu-calendario').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-calendario');
+    document.getElementById('calendario-panel').style.display = 'block';
+    renderCalendario();
+    actualizarListaEventos();
+  });
+
+  document.getElementById('prev-month').addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendario();
+  });
+
+  document.getElementById('next-month').addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendario();
+  });
+
+  // Manejar cambios en el filtro de eventos
+  document.getElementById('filtro-eventos').addEventListener('change', (e) => {
+    actualizarListaEventos(e.target.value);
+  });
+
+  // Modal de eventos
+  const modal = document.getElementById('evento-modal');
+  const closeBtn = document.getElementsByClassName('close')[0];
+  const eventoForm = document.getElementById('evento-form');
+
+  closeBtn.onclick = () => modal.style.display = 'none';
+  window.onclick = (e) => {
+    if (e.target == modal) modal.style.display = 'none';
+  };
+
+  eventoForm.onsubmit = (e) => {
+    e.preventDefault();
+    guardarEvento(e);
+  };
+}
+
+function formatearFecha(year, month, day) {
+  // Asegurarse de que los valores sean números
+  const y = parseInt(year);
+  const m = parseInt(month);
+  const d = parseInt(day);
+  
+  // Crear fecha en zona horaria de Chile
+  const fecha = new Date(y, m - 1, d);
+  const fechaChile = new Intl.DateTimeFormat('es-CL', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'America/Santiago'
+  }).format(fecha);
+  
+  // Convertir del formato DD-MM-YYYY a YYYY-MM-DD
+  const [dia, mes, anio] = fechaChile.split('-');
+  return `${anio}-${mes}-${dia}`;
+}
+
+function mostrarEventosDelDia(fecha) {
+  const eventosDelDia = eventos[fecha];
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'eventos-dia-modal';
+  
+  // Crear fecha en formato chileno
+  const [year, month, day] = fecha.split('-').map(Number);
+  const fechaObj = new Date(year, month - 1, day);
+  const fechaFormateada = new Intl.DateTimeFormat('es-CL', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'America/Santiago'
+  }).format(fechaObj);
+
+  const contenido = `
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3 class="modal-title">Eventos del ${fechaFormateada}</h3>
+      <div class="eventos-dia-lista">
+        ${eventosDelDia.map((evento, index) => `
+          <div class="evento-item evento-${evento.tipo}">
+            <div class="evento-header">
+              <div class="evento-titulo">${evento.titulo}</div>
+              <button class="btn-eliminar-evento" onclick="eliminarEventoYCerrarModal('${fecha}', ${index})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="evento-hora">${formatearHora(evento.hora)}</div>
+            <div class="evento-detalles">
+              <div class="evento-tipo">Tipo: ${evento.tipo}</div>
+              <div class="evento-ramo">Ramo: ${evento.ramo}</div>
+              <div class="evento-curso">Curso: ${evento.curso}</div>
+              <div class="evento-lugar">Lugar: ${evento.lugar}</div>
+            </div>
+            ${evento.descripcion ? `<div class="evento-descripcion">${evento.descripcion}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn-agregar" onclick="abrirModalEvento(${year}, ${month}, ${day})">
+        Agregar Evento
+      </button>
+    </div>
+  `;
+
+  modal.innerHTML = contenido;
+  document.body.appendChild(modal);
+
+  // Cerrar modal
+  const closeBtn = modal.querySelector('.close');
+  closeBtn.onclick = () => {
+    document.body.removeChild(modal);
+  };
+  window.onclick = (e) => {
+    if (e.target == modal) {
+      document.body.removeChild(modal);
+    }
+  };
+}
+
+// Función para formatear la hora en formato chileno (12 horas)
+function formatearHora(hora) {
+  const [hours, minutes] = hora.split(':');
+  const hoursNum = parseInt(hours);
+  const ampm = hoursNum >= 12 ? 'PM' : 'AM';
+  const hours12 = hoursNum % 12 || 12;
+  return `${hours12}:${minutes} ${ampm}`;
+}
+
+// Variable global para la fecha/hora de Chile obtenida por internet
+let fechaChileInternet = null;
+
+async function obtenerFechaChileInternet() {
+  try {
+    const resp = await fetch('https://worldtimeapi.org/api/timezone/America/Santiago');
+    const data = await resp.json();
+    // data.datetime es algo como '2024-05-05T13:45:00.123456-04:00'
+    fechaChileInternet = new Date(data.datetime);
+    renderCalendario(); // Redibujar el calendario con la fecha correcta
+  } catch (e) {
+    console.error('No se pudo obtener la hora de internet, usando la del dispositivo');
+    fechaChileInternet = new Date();
+    renderCalendario();
+  }
+}
+
+// Llamar a la función al cargar el DOM
+// (Evita múltiples renderCalendario en el mismo DOMContentLoaded)
+document.addEventListener('DOMContentLoaded', function() {
+  obtenerFechaChileInternet();
+});
+
+function renderCalendario() {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  
+  // Actualizar título del mes y año
+  document.getElementById('month-year').textContent = new Intl.DateTimeFormat('es-CL', {
+    month: 'long',
+    year: 'numeric'
+  }).format(currentDate);
+  
+  const grid = document.getElementById('calendario-grid');
+  grid.innerHTML = '';
+  
+  // Obtener el primer día del mes (0 = Domingo, 1 = Lunes, etc.)
+  const primerDia = new Date(year, month, 1).getDay();
+  
+  // Obtener el último día del mes
+  const diasEnMes = new Date(year, month + 1, 0).getDate();
+  
+  // Obtener la fecha actual en Chile
+  const hoy = fechaChileInternet ? new Date(fechaChileInternet) : new Date();
+  hoy.setHours(0, 0, 0, 0);
+  
+  // Días del mes anterior
+  const diasMesAnterior = new Date(year, month, 0).getDate();
+  for (let i = primerDia - 1; i >= 0; i--) {
+    const dia = document.createElement('div');
+    dia.className = 'dia otro-mes';
+    dia.textContent = diasMesAnterior - i;
+    grid.appendChild(dia);
+  }
+  
+  // Días del mes actual
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const elemento = document.createElement('div');
+    elemento.className = 'dia';
+    elemento.textContent = dia;
+    
+    // Marcar el día actual
+    if (year === hoy.getFullYear() && 
+        month === hoy.getMonth() && 
+        dia === hoy.getDate()) {
+      elemento.classList.add('hoy');
+    }
+
+    // Verificar si hay eventos en este día
+    const fecha = formatearFecha(year, month + 1, dia);
+    if (eventos[fecha] && eventos[fecha].length > 0) {
+      elemento.classList.add('tiene-eventos');
+      
+      // Agregar el número de eventos como atributo data
+      elemento.setAttribute('data-eventos', eventos[fecha].length);
+      
+      // Agregar clases para cada tipo de evento presente en el día
+      const tiposEventos = new Set(eventos[fecha].map(e => e.tipo));
+      tiposEventos.forEach(tipo => {
+        if (tipo) {
+          elemento.classList.add(`evento-${tipo}`);
+        }
+      });
+      
+      // Añadir tooltip con información de eventos
+      const tooltipContent = eventos[fecha]
+        .map(e => `${e.titulo} (${e.tipo}) - ${formatearHora(e.hora)}`)
+        .join('\n');
+      elemento.title = tooltipContent;
+    }
+
+    elemento.onclick = () => abrirModalEvento(year, month + 1, dia);
+    grid.appendChild(elemento);
+  }
+
+  // Días del mes siguiente
+  const diasRestantes = 42 - (primerDia + diasEnMes);
+  for (let i = 1; i <= diasRestantes; i++) {
+    const dia = document.createElement('div');
+    dia.className = 'dia otro-mes';
+    dia.textContent = i;
+    grid.appendChild(dia);
+  }
+}
+
+function formatearFecha(year, month, day) {
+  // Asegurarse de que los valores sean números
+  const y = parseInt(year);
+  const m = parseInt(month);
+  const d = parseInt(day);
+  
+  // Crear fecha en zona horaria de Chile
+  const fecha = new Date(y, m - 1, d);
+  const fechaChile = new Intl.DateTimeFormat('es-CL', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'America/Santiago'
+  }).format(fecha);
+  
+  // Convertir del formato DD-MM-YYYY a YYYY-MM-DD
+  const [dia, mes, anio] = fechaChile.split('-');
+  return `${anio}-${mes}-${dia}`;
+}
+
+function abrirModalEvento(year, month, dia) {
+  // Usar la fecha seleccionada tal cual
+  const fecha = formatearFecha(year, month, dia);
+
+  // Verificar si hay eventos para esta fecha
+  if (eventos[fecha] && eventos[fecha].length > 0) {
+    mostrarEventosDelDia(fecha);
+  } else {
+    // Si no hay eventos, mostrar el modal para agregar uno nuevo
+    const modal = document.getElementById('evento-modal');
+    document.getElementById('evento-fecha').value = fecha;
+    limpiarFormulario();
+    // Mantener la fecha seleccionada
+    document.getElementById('evento-fecha').value = fecha;
+    modal.style.display = 'block';
+  }
+}
+
+// Función para eliminar evento y cerrar el modal de eventos del día
+function eliminarEventoYCerrarModal(fecha, index) {
+  eliminarEvento(fecha, index);
+  const modal = document.getElementById('eventos-dia-modal');
+  if (modal) {
+    document.body.removeChild(modal);
+  }
+}
+
+// Función para guardar un evento
+function guardarEvento(e) {
+  e.preventDefault();
+
+  // Tomar la fecha tal como la selecciona el usuario
+  const fecha = document.getElementById('evento-fecha').value;
+
+  const evento = {
+    titulo: document.getElementById('evento-titulo').value,
+    fecha: fecha, // Usar la fecha del input directamente
+    hora: document.getElementById('evento-hora').value,
+    tipo: document.getElementById('evento-tipo').value,
+    ramo: document.getElementById('evento-ramo').value,
+    curso: document.getElementById('evento-curso').value,
+    lugar: document.getElementById('evento-lugar').value,
+    descripcion: document.getElementById('evento-descripcion').value
+  };
+
+  if (!eventos[fecha]) {
+    eventos[fecha] = [];
+  }
+  eventos[fecha].push(evento);
+  localStorage.setItem('eventos', JSON.stringify(eventos));
+  document.getElementById('evento-modal').style.display = 'none';
+  limpiarFormulario();
+  renderCalendario();
+  actualizarListaEventos(document.getElementById('filtro-eventos').value);
+}
+
+// Función para actualizar el calendario
+function actualizarCalendario() {
+  renderCalendario();
+  actualizarListaEventos(document.getElementById('filtro-eventos').value);
+}
+
+// Función para cerrar el modal
+function cerrarModal() {
+  const modal = document.getElementById('evento-modal');
+  modal.style.display = 'none';
+  limpiarFormulario();
+}
+
+// Función para mostrar evento en la lista
+function crearElementoEvento(evento, fecha) {
+  const eventoElement = document.createElement('div');
+  eventoElement.className = 'evento-item';
+  
+  const fechaFormateada = new Date(fecha).toLocaleDateString('es', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  eventoElement.innerHTML = `
+    <div class="evento-header">
+      <div>
+        <div class="evento-fecha">${fechaFormateada}</div>
+        <div class="evento-titulo">${evento.titulo}</div>
+      </div>
+      <button class="btn-eliminar-evento" onclick="eliminarEvento('${fecha}', ${eventos[fecha].indexOf(evento)})">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="evento-hora">${evento.hora}</div>
+    <div class="evento-detalles">
+      <div class="evento-tipo">Tipo: ${evento.tipo}</div>
+      <div class="evento-ramo">Ramo: ${evento.ramo}</div>
+      <div class="evento-curso">Curso: ${evento.curso}</div>
+      <div class="evento-lugar">Lugar: ${evento.lugar}</div>
+    </div>
+    ${evento.descripcion ? `<div class="evento-descripcion">${evento.descripcion}</div>` : ''}
+  `;
+  
+  return eventoElement;
+}
+
+// Función para limpiar el formulario
+function limpiarFormulario() {
+  const fecha = document.getElementById('evento-fecha').value; // Guardar la fecha actual
+  document.getElementById('evento-titulo').value = '';
+  document.getElementById('evento-hora').value = '';
+  document.getElementById('evento-tipo').value = '';
+  document.getElementById('evento-ramo').value = '';
+  document.getElementById('evento-curso').value = '';
+  document.getElementById('evento-lugar').value = '';
+  document.getElementById('evento-descripcion').value = '';
+  document.getElementById('evento-fecha').value = fecha; // Restaurar la fecha
+}
+
+// Inicializar el calendario cuando se carga el documento
+document.addEventListener('DOMContentLoaded', function() {
+  initCalendario();
+});
+
+function hideAllPanels() {
+  // Ocultar todos los paneles principales
+  document.getElementById('calc-panel').style.display = 'none';
+  document.getElementById('escala-panel').style.display = 'none';
+  document.getElementById('multi-panel').style.display = 'none';
+  document.getElementById('calendario-panel').style.display = 'none';
+  document.getElementById('inventario-panel').style.display = 'none';
+}
+
+function updateActiveMenuItem(menuId) {
+  // Remover la clase active de todos los items del menú
+  document.querySelectorAll('.side-menu a').forEach(item => {
+    item.classList.remove('active');
+  });
+  // Añadir la clase active al item seleccionado
+  document.getElementById(menuId).classList.add('active');
+}
+
+// Lógica para importar eventos desde Excel en el calendario
+
+document.addEventListener('DOMContentLoaded', function() {
+  const btnCargarExcel = document.getElementById('btn-cargar-excel');
+  const inputCargarExcel = document.getElementById('input-cargar-excel');
+  if (btnCargarExcel && inputCargarExcel) {
+    btnCargarExcel.addEventListener('click', function() {
+      inputCargarExcel.value = '';
+      inputCargarExcel.click();
+    });
+    inputCargarExcel.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, {type: 'array'});
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+          // Buscar encabezados
+          const headers = rows[0].map(h => (h || '').toString().trim().toLowerCase());
+          const campos = ['título','titulo','fecha','hora','tipo','ramo','curso','lugar','descripción','descripcion'];
+          // Mapear índices de columnas
+          const idx = {
+            titulo: headers.findIndex(h => h === 'título' || h === 'titulo'),
+            fecha: headers.findIndex(h => h === 'fecha'),
+            hora: headers.findIndex(h => h === 'hora'),
+            tipo: headers.findIndex(h => h === 'tipo'),
+            ramo: headers.findIndex(h => h === 'ramo'),
+            curso: headers.findIndex(h => h === 'curso'),
+            lugar: headers.findIndex(h => h === 'lugar'),
+            descripcion: headers.findIndex(h => h === 'descripción' || h === 'descripcion')
+          };
+          // Validar que los campos obligatorios existen
+          if (idx.titulo === -1 || idx.fecha === -1 || idx.hora === -1 || idx.tipo === -1 || idx.ramo === -1 || idx.curso === -1 || idx.lugar === -1) {
+            alert('El archivo debe tener las columnas: Título, Fecha, Hora, Tipo, Ramo, Curso, Lugar (y Descripción opcional)');
+            return;
+          }
+          let nuevos = 0;
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row[idx.titulo] || !row[idx.fecha] || !row[idx.hora]) continue;
+            // Soportar fechas en formato serial de Excel o string
+            let fechaExcel = row[idx.fecha];
+            let fecha = '';
+            if (typeof fechaExcel === 'number') {
+              // Convertir serial Excel a fecha JS
+              const dateObj = XLSX.SSF.parse_date_code(fechaExcel);
+              if (dateObj) {
+                const y = dateObj.y;
+                const m = dateObj.m;
+                const d = dateObj.d;
+                fecha = `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+              }
+            } else if (typeof fechaExcel === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fechaExcel)) {
+              fecha = fechaExcel;
+            } else {
+              // Intentar parsear string tipo fecha
+              const dateObj = new Date(fechaExcel);
+              if (!isNaN(dateObj.getTime())) {
+                const y = dateObj.getFullYear();
+                const m = dateObj.getMonth() + 1;
+                const d = dateObj.getDate();
+                fecha = `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+              }
+            }
+            if (!fecha) continue; // Si no se pudo convertir, saltar
+            const evento = {
+              titulo: row[idx.titulo].toString(),
+              fecha: fecha,
+              hora: row[idx.hora].toString(),
+              tipo: row[idx.tipo] ? row[idx.tipo].toString() : '',
+              ramo: row[idx.ramo] ? row[idx.ramo].toString() : '',
+              curso: row[idx.curso] ? row[idx.curso].toString() : '',
+              lugar: row[idx.lugar] ? row[idx.lugar].toString() : '',
+              descripcion: idx.descripcion !== -1 && row[idx.descripcion] ? row[idx.descripcion].toString() : ''
+            };
+            if (!eventos[fecha]) eventos[fecha] = [];
+            eventos[fecha].push(evento);
+            nuevos++;
+          }
+          if (nuevos > 0) {
+            localStorage.setItem('eventos', JSON.stringify(eventos));
+            renderCalendario();
+            actualizarListaEventos(document.getElementById('filtro-eventos').value);
+            alert('Se importaron ' + nuevos + ' eventos correctamente.');
+          } else {
+            alert('No se encontraron eventos válidos para importar.');
+          }
+        } catch (err) {
+          alert('Error al procesar el archivo: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+});
+
+// Lógica para descargar plantilla de Excel para eventos del calendario
+
+document.addEventListener('DOMContentLoaded', function() {
+  const btnDescargarPlantilla = document.getElementById('btn-descargar-plantilla-excel');
+  if (btnDescargarPlantilla) {
+    btnDescargarPlantilla.addEventListener('click', function() {
+      // Encabezados de la plantilla
+      const headers = [
+        'Título', 'Fecha', 'Hora', 'Tipo', 'Ramo', 'Curso', 'Lugar', 'Descripción'
+      ];
+      // Fila de ejemplo
+      const ejemplo = [
+        'Prueba de Matemáticas', '2024-06-10', '09:00', 'prueba', 'Matemáticas', '2°A', 'Sala 101', 'Prueba de contenidos de la unidad 1'
+      ];
+      const data = [headers, ejemplo];
+      // Crear hoja y libro
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      // Aplicar formato de fecha a la columna 'Fecha' (columna B) para varias filas
+      for (let i = 2; i <= 100; i++) { // Hasta la fila 100 como ejemplo
+        const cellFecha = 'B' + i;
+        if (!ws[cellFecha]) ws[cellFecha] = { t: 'd', v: new Date(2024, 5, 10) }; // Valor por defecto
+        ws[cellFecha].z = 'yyyy-mm-dd';
+        // Formato de hora para columna C
+        const cellHora = 'C' + i;
+        if (!ws[cellHora]) ws[cellHora] = { t: 'n', v: 0.375 }; // 09:00 en formato Excel (9/24)
+        ws[cellHora].z = 'h:mm:ss AM/PM';
+      }
+      if (!ws['!cols']) ws['!cols'] = [];
+      ws['!cols'][1] = { wch: 12 }; // Fecha
+      ws['!cols'][2] = { wch: 12 };  // Hora
+      // Crear el libro y descargar
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Eventos');
+      XLSX.writeFile(wb, 'plantilla_eventos_calendario.xlsx');
+    });
+  }
+});
+
+// ... existing code ...
+// Lógica para exportar eventos del calendario a Excel en formato plantilla
+
+document.addEventListener('DOMContentLoaded', function() {
+  const btnExportarEventos = document.getElementById('btn-exportar-eventos-excel');
+  if (btnExportarEventos) {
+    btnExportarEventos.addEventListener('click', function() {
+      // Encabezados
+      const headers = [
+        'Título', 'Fecha', 'Hora', 'Tipo', 'Ramo', 'Curso', 'Lugar', 'Descripción'
+      ];
+      // Recolectar todos los eventos
+      let eventosArr = [];
+      for (const fecha in eventos) {
+        eventos[fecha].forEach(ev => {
+          eventosArr.push([
+            ev.titulo || '',
+            ev.fecha || '',
+            ev.hora || '',
+            ev.tipo || '',
+            ev.ramo || '',
+            ev.curso || '',
+            ev.lugar || '',
+            ev.descripcion || ''
+          ]);
+        });
+      }
+      // Construir datos para Excel
+      const data = [headers, ...eventosArr];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      // Formato de fecha y hora para todas las filas
+      for (let i = 2; i <= data.length; i++) {
+        const cellFecha = 'B' + i;
+        if (ws[cellFecha]) ws[cellFecha].z = 'yyyy-mm-dd';
+        const cellHora = 'C' + i;
+        if (ws[cellHora]) ws[cellHora].z = 'h:mm:ss AM/PM';
+      }
+      if (!ws['!cols']) ws['!cols'] = [];
+      ws['!cols'][1] = { wch: 12 }; // Fecha
+      ws['!cols'][2] = { wch: 12 }; // Hora
+      // Crear libro y descargar
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Eventos');
+      XLSX.writeFile(wb, 'eventos_calendario.xlsx');
+    });
+  }
+});
+
+// ... existing code ...
+// Lógica para filtros minimalistas de ramo, curso y sala en el calendario
+
+document.addEventListener('DOMContentLoaded', function() {
+  const filtroRamo = document.getElementById('filtro-ramo');
+  const filtroCurso = document.getElementById('filtro-curso');
+  const filtroSala = document.getElementById('filtro-sala');
+
+  if (filtroRamo && filtroCurso && filtroSala) {
+    // Función para poblar los filtros con valores únicos
+    function poblarFiltros() {
+      const ramos = new Set();
+      const cursos = new Set();
+      const salas = new Set();
+      
+      for (const fecha in eventos) {
+        eventos[fecha].forEach(ev => {
+          if (ev.ramo) ramos.add(ev.ramo);
+          if (ev.curso) cursos.add(ev.curso);
+          if (ev.lugar) salas.add(ev.lugar);
+        });
+      }
+      
+      // Mantener el valor seleccionado actual
+      const ramoSeleccionado = filtroRamo.value;
+      const cursoSeleccionado = filtroCurso.value;
+      const salaSeleccionada = filtroSala.value;
+      
+      // Actualizar las opciones manteniendo la selección
+      filtroRamo.innerHTML = '<option value="">Ramo</option>' + 
+        Array.from(ramos).sort().map(r => 
+          `<option value="${r}" ${r === ramoSeleccionado ? 'selected' : ''}>${r}</option>`
+        ).join('');
+      
+      filtroCurso.innerHTML = '<option value="">Curso</option>' + 
+        Array.from(cursos).sort().map(c => 
+          `<option value="${c}" ${c === cursoSeleccionado ? 'selected' : ''}>${c}</option>`
+        ).join('');
+      
+      filtroSala.innerHTML = '<option value="">Sala</option>' + 
+        Array.from(salas).sort().map(s => 
+          `<option value="${s}" ${s === salaSeleccionada ? 'selected' : ''}>${s}</option>`
+        ).join('');
+    }
+
+    // Agregar event listeners para los filtros
+    [filtroRamo, filtroCurso, filtroSala].forEach(filtro => {
+      filtro.addEventListener('change', () => {
+        const filtroEventos = document.getElementById('filtro-eventos');
+        actualizarListaEventos(filtroEventos.value);
+      });
+    });
+
+    // Llamar a poblarFiltros inicialmente
+    poblarFiltros();
+
+    // Sobrescribir la función actualizarListaEventos original
+    const originalActualizarListaEventos = actualizarListaEventos;
+    actualizarListaEventos = function(filtro = 'todos') {
+      // Primero poblar los filtros
+      poblarFiltros();
+      
+      const listaEventos = document.getElementById('lista-eventos');
+      listaEventos.innerHTML = '';
+      
+      // Obtener valores de los filtros
+      const ramoSel = filtroRamo.value;
+      const cursoSel = filtroCurso.value;
+      const salaSel = filtroSala.value;
+      
+      // Obtener todos los eventos
+      const todosLosEventos = [];
+      for (const fecha in eventos) {
+        eventos[fecha].forEach((evento, index) => {
+          todosLosEventos.push({
+            fecha,
+            index,
+            ...evento
+          });
+        });
+      }
+      
+      // Ordenar por fecha y hora
+      todosLosEventos.sort((a, b) => {
+        const fechaA = new Date(a.fecha + 'T' + a.hora + ':00-04:00');
+        const fechaB = new Date(b.fecha + 'T' + b.hora + ':00-04:00');
+        return fechaA - fechaB;
+      });
+      
+      // Aplicar filtros
+      let eventosFiltrados = filtrarEventos(todosLosEventos, filtro);
+      
+      // Aplicar filtros minimalistas
+      if (ramoSel) {
+        eventosFiltrados = eventosFiltrados.filter(ev => ev.ramo === ramoSel);
+      }
+      if (cursoSel) {
+        eventosFiltrados = eventosFiltrados.filter(ev => ev.curso === cursoSel);
+      }
+      if (salaSel) {
+        eventosFiltrados = eventosFiltrados.filter(ev => ev.lugar === salaSel);
+      }
+      
+      // Mostrar eventos filtrados
+      eventosFiltrados.forEach(evento => {
+        const eventoElement = document.createElement('div');
+        eventoElement.className = `evento-item evento-${evento.tipo}`;
+        
+        // Validar fecha antes de formatear
+        let fechaFormateada = 'Fecha inválida';
+        if (evento.fecha && /^\d{4}-\d{2}-\d{2}$/.test(evento.fecha)) {
+          const [year, month, day] = evento.fecha.split('-').map(Number);
+          const fechaObj = new Date(year, month - 1, day);
+          if (!isNaN(fechaObj.getTime())) {
+            fechaFormateada = new Intl.DateTimeFormat('es-CL', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              timeZone: 'America/Santiago'
+            }).format(fechaObj);
+          }
+        }
+        
+        // Mostrar la hora en formato HH:mm si es serial
+        let horaFormateada = evento.hora;
+        if (typeof horaFormateada === 'number' || (!isNaN(Number(horaFormateada)) && horaFormateada !== '')) {
+          let serial = Number(horaFormateada);
+          let totalMinutes = Math.round(serial * 24 * 60);
+          let h = Math.floor(totalMinutes / 60);
+          let m = totalMinutes % 60;
+          horaFormateada = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        }
+        
+        eventoElement.innerHTML = `
+          <div class="evento-header">
+            <div class="evento-fecha">${fechaFormateada}</div>
+            <button class="btn-eliminar-evento" onclick="eliminarEvento('${evento.fecha}', ${evento.index})">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="evento-titulo">${evento.titulo}</div>
+          <div class="evento-hora">${horaFormateada}</div>
+          <div class="evento-detalles">
+            <div class="evento-tipo">Tipo: ${evento.tipo}</div>
+            <div class="evento-ramo">Ramo: ${evento.ramo}</div>
+            <div class="evento-curso">Curso: ${evento.curso}</div>
+            <div class="evento-lugar">Lugar: ${evento.lugar}</div>
+          </div>
+          ${evento.descripcion ? `<div class="evento-descripcion">${evento.descripcion}</div>` : ''}
+        `;
+        
+        listaEventos.appendChild(eventoElement);
+      });
+      
+      if (eventosFiltrados.length === 0) {
+        listaEventos.innerHTML = '<div class="no-eventos">No hay eventos para mostrar</div>';
+      }
+    };
+  }
+});
+
+// ... existing code ...
+
+// Sistema de Inventario de Libros
+let libros = JSON.parse(localStorage.getItem('libros')) || [];
+
+// Función para mostrar el modal de agregar/editar libro
+function mostrarModalLibro(index = null) {
+  const modal = document.getElementById('libro-modal');
+  const form = document.getElementById('libro-form');
+  const titulo = document.querySelector('#libro-modal h3');
+  
+  // Limpiar el formulario
+  form.reset();
+  
+  if (index !== null) {
+    // Modo edición
+    const libros = JSON.parse(localStorage.getItem('libros') || '[]');
+    const libro = libros[index];
+    
+    titulo.textContent = 'Editar Libro';
+    document.getElementById('libro-estado').value = libro.estado || 'disponible';
+    document.getElementById('libro-codigo').value = libro.codigo || '';
+    document.getElementById('libro-titulo').value = libro.titulo || '';
+    document.getElementById('libro-isbn').value = libro.isbn || '';
+    document.getElementById('libro-autor').value = libro.autor || '';
+    document.getElementById('libro-ubicacion').value = libro.ubicacion || '';
+    document.getElementById('libro-stock').value = libro.stock || 0;
+    document.getElementById('libro-codigomineduc').value = libro.codigomineduc || '';
+    
+    form.dataset.modo = 'editar';
+    form.dataset.libroId = index;
+  } else {
+    // Modo agregar
+    titulo.textContent = 'Agregar Libro';
+    form.dataset.modo = 'agregar';
+    delete form.dataset.libroId;
+  }
+  
+  modal.style.display = 'block';
+}
+
+// Función para guardar un libro
+function guardarLibro() {
+  const form = document.getElementById('libro-form');
+  const libro = {
+    estado: document.getElementById('libro-estado').value,
+    codigo: document.getElementById('libro-codigo').value,
+    titulo: document.getElementById('libro-titulo').value,
+    isbn: document.getElementById('libro-isbn').value,
+    autor: document.getElementById('libro-autor').value,
+    ubicacion: document.getElementById('libro-ubicacion').value,
+    stock: document.getElementById('libro-stock').value,
+    codigomineduc: document.getElementById('libro-codigomineduc').value
+  };
+
+  const libros = JSON.parse(localStorage.getItem('libros') || '[]');
+  
+  if (form.dataset.modo === 'editar' && form.dataset.libroId) {
+    // Modo edición: actualizar libro existente
+    const index = parseInt(form.dataset.libroId);
+    libros[index] = libro;
+  } else {
+    // Modo agregar: añadir nuevo libro
+    libros.push(libro);
+  }
+  
+  localStorage.setItem('libros', JSON.stringify(libros));
+  document.getElementById('libro-modal').style.display = 'none';
+  actualizarTablaLibros();
+}
+
+// Función para eliminar un libro
+function eliminarLibro(index) {
+  if (confirm('¿Estás seguro de que deseas eliminar este libro?')) {
+    const libros = JSON.parse(localStorage.getItem('libros') || '[]');
+    libros.splice(index, 1);
+    localStorage.setItem('libros', JSON.stringify(libros));
+    actualizarTablaLibros();
+  }
+}
+
+// Función para actualizar la tabla de libros
+function actualizarTablaLibros() {
+  const tbody = document.getElementById('libros-lista');
+  const filtro = document.getElementById('filtro-busqueda').value;
+  const busqueda = document.getElementById('buscar-libro').value.toLowerCase();
+  const libros = JSON.parse(localStorage.getItem('libros') || '[]');
+  
+  tbody.innerHTML = '';
+  
+  libros.forEach((libro, index) => {
+    if (libro[filtro].toString().toLowerCase().includes(busqueda)) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="estado-${libro.estado || 'disponible'}">${libro.estado || 'disponible'}</td>
+        <td>${libro.codigo}</td>
+        <td>${libro.titulo}</td>
+        <td>${libro.isbn}</td>
+        <td>${libro.autor}</td>
+        <td>${libro.ubicacion}</td>
+        <td>${libro.stock}</td>
+        <td>${libro.codigomineduc}</td>
+        <td>
+          <button class="btn-editar" onclick="mostrarModalLibro(${index})">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="btn-eliminar" onclick="eliminarLibro(${index})">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  });
+}
+
+// Inicializar el sistema de inventario
+document.addEventListener('DOMContentLoaded', function() {
+  // Event listeners para los botones de inventario
+  document.getElementById('btn-agregar-libro').addEventListener('click', () => mostrarModalLibro());
+  document.getElementById('buscar-libro').addEventListener('input', actualizarTablaLibros);
+  document.getElementById('filtro-busqueda').addEventListener('change', actualizarTablaLibros);
+  
+  // Event listener para el formulario de libro
+  document.getElementById('libro-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    guardarLibro();
+  });
+
+  // Event listener para cerrar el modal
+  document.querySelector('#libro-modal .close').addEventListener('click', () => {
+    document.getElementById('libro-modal').style.display = 'none';
+  });
+
+  // Event listener para cerrar el modal al hacer clic fuera
+  window.addEventListener('click', (e) => {
+    const modal = document.getElementById('libro-modal');
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+});
+
