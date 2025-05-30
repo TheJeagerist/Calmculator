@@ -368,34 +368,44 @@ document.addEventListener('DOMContentLoaded', function() {
   // Inicializar filas y plantillas
   initRows();
   loadTemplates();
+  
+  // Inicializar el calendario
+  initCalendario();
 
-  // Configurar event listeners
-  menuCalculadora.addEventListener('click', function(e) {
+  // Configurar event listeners para los menús
+  document.getElementById('menu-calculadora').addEventListener('click', function(e) {
     e.preventDefault();
-    window.location.hash = '';
-    calcPanel.style.display = "block";
-    escalaPanel.style.display = "none";
-    this.classList.add('active');
-    menuEscala.classList.remove('active');
+    hideAllPanels();
+    updateActiveMenuItem('menu-calculadora');
+    document.getElementById('calc-panel').style.display = 'block';
   });
 
-  menuEscala.addEventListener('click', function(e) {
+  document.getElementById('menu-escala').addEventListener('click', function(e) {
     e.preventDefault();
-    window.location.hash = 'escala';
-    calcPanel.style.display = "none";
-    escalaPanel.style.display = "block";
-    this.classList.add('active');
-    menuCalculadora.classList.remove('active');
-    menuEscala.classList.remove('active');
-    menuEscala.classList.remove('active');
+    hideAllPanels();
+    updateActiveMenuItem('menu-escala');
+    document.getElementById('escala-panel').style.display = 'block';
     generarTablaEscala();
   });
 
-  // Inicializar paneles
-  initializePanels();
+  document.getElementById('menu-multi').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-multi');
+    document.getElementById('multi-panel').style.display = 'block';
+  });
 
-  // Configurar event listener para cambios en el hash
-  window.addEventListener('hashchange', initializePanels);
+  document.getElementById('menu-calendario').addEventListener('click', function(e) {
+    e.preventDefault();
+    hideAllPanels();
+    updateActiveMenuItem('menu-calendario');
+    document.getElementById('calendario-panel').style.display = 'block';
+    renderCalendario();
+  });
+
+  // Mostrar el panel de calculadora por defecto
+  document.getElementById('calc-panel').style.display = 'block';
+  updateActiveMenuItem('menu-calculadora');
 });
 
 function generarTablaEscala() {
@@ -1203,7 +1213,7 @@ function addSection() {
   section.className = 'section-panel';
   section.innerHTML = `
     <div class="section-header">
-      <div class="section-title">Sección ${sectionCounter}</div>
+      <div class="section-title">Estudiante ${sectionCounter}</div>
       <div class="section-result">Promedio: <span>0.00</span></div>
     </div>
     <div class="section-controls">
@@ -1228,7 +1238,7 @@ function removeSection() {
     sections.removeChild(sections.lastChild);
     sectionCounter--;
   } else {
-    alert('Debe quedar al menos una sección.');
+    alert('Debe quedar al menos una Estudiante.');
   }
 }
 
@@ -2229,11 +2239,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function hideAllPanels() {
   // Ocultar todos los paneles principales
-  document.getElementById('calc-panel').style.display = 'none';
-  document.getElementById('escala-panel').style.display = 'none';
-  document.getElementById('multi-panel').style.display = 'none';
-  document.getElementById('calendario-panel').style.display = 'none';
-  document.getElementById('inventario-panel').style.display = 'none';
+  const paneles = [
+    'calc-panel',
+    'escala-panel',
+    'multi-panel',
+    'calendario-panel'
+  ];
+  
+  paneles.forEach(panel => {
+    const elemento = document.getElementById(panel);
+    if (elemento) {
+      elemento.style.display = 'none';
+    }
+  });
 }
 
 function updateActiveMenuItem(menuId) {
@@ -2598,153 +2616,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ... existing code ...
-
-// Sistema de Inventario de Libros
-let libros = JSON.parse(localStorage.getItem('libros')) || [];
-
-// Función para mostrar el modal de agregar/editar libro
-function mostrarModalLibro(index = null) {
-  const modal = document.getElementById('libro-modal');
-  const form = document.getElementById('libro-form');
-  const titulo = document.querySelector('#libro-modal h3');
-  
-  // Limpiar el formulario
-  form.reset();
-  
-  if (index !== null) {
-    // Modo edición
-    const libros = JSON.parse(localStorage.getItem('libros') || '[]');
-    const libro = libros[index];
-    
-    titulo.textContent = 'Editar Libro';
-    document.getElementById('libro-estado').value = libro.estado || 'disponible';
-    document.getElementById('libro-codigo').value = libro.codigo || '';
-    document.getElementById('libro-titulo').value = libro.titulo || '';
-    document.getElementById('libro-isbn').value = libro.isbn || '';
-    document.getElementById('libro-autor').value = libro.autor || '';
-    document.getElementById('libro-ubicacion').value = libro.ubicacion || '';
-    document.getElementById('libro-stock').value = libro.stock || 0;
-    document.getElementById('libro-codigomineduc').value = libro.codigomineduc || '';
-    
-    form.dataset.modo = 'editar';
-    form.dataset.libroId = index;
-  } else {
-    // Modo agregar
-    titulo.textContent = 'Agregar Libro';
-    form.dataset.modo = 'agregar';
-    delete form.dataset.libroId;
-  }
-  
-  modal.style.display = 'block';
-}
-
-// Función para guardar un libro
-function guardarLibro() {
-  const form = document.getElementById('libro-form');
-  const libro = {
-    estado: document.getElementById('libro-estado').value,
-    codigo: document.getElementById('libro-codigo').value,
-    titulo: document.getElementById('libro-titulo').value,
-    isbn: document.getElementById('libro-isbn').value,
-    autor: document.getElementById('libro-autor').value,
-    ubicacion: document.getElementById('libro-ubicacion').value,
-    stock: document.getElementById('libro-stock').value,
-    codigomineduc: document.getElementById('libro-codigomineduc').value
-  };
-
-  const libros = JSON.parse(localStorage.getItem('libros') || '[]');
-  
-  if (form.dataset.modo === 'editar' && form.dataset.libroId) {
-    // Modo edición: actualizar libro existente
-    const index = parseInt(form.dataset.libroId);
-    libros[index] = libro;
-  } else {
-    // Modo agregar: añadir nuevo libro
-    libros.push(libro);
-  }
-  
-  localStorage.setItem('libros', JSON.stringify(libros));
-  document.getElementById('libro-modal').style.display = 'none';
-  actualizarTablaLibros();
-}
-
-// Función para eliminar un libro
-function eliminarLibro(index) {
-  if (confirm('¿Estás seguro de que deseas eliminar este libro?')) {
-    const libros = JSON.parse(localStorage.getItem('libros') || '[]');
-    libros.splice(index, 1);
-    localStorage.setItem('libros', JSON.stringify(libros));
-    actualizarTablaLibros();
-  }
-}
-
-// Función para actualizar la tabla de libros
-function actualizarTablaLibros() {
-  const tbody = document.getElementById('libros-lista');
-  const filtro = document.getElementById('filtro-busqueda').value;
-  const busqueda = document.getElementById('buscar-libro').value.toLowerCase();
-  const libros = JSON.parse(localStorage.getItem('libros') || '[]');
-  
-  tbody.innerHTML = '';
-  
-  libros.forEach((libro, index) => {
-    if (libro[filtro].toString().toLowerCase().includes(busqueda)) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="estado-${libro.estado || 'disponible'}">${libro.estado || 'disponible'}</td>
-        <td>${libro.codigo}</td>
-        <td>${libro.titulo}</td>
-        <td>${libro.isbn}</td>
-        <td>${libro.autor}</td>
-        <td>${libro.ubicacion}</td>
-        <td>${libro.stock}</td>
-        <td>${libro.codigomineduc}</td>
-        <td>
-          <button class="btn-editar" onclick="mostrarModalLibro(${index})">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-          </button>
-          <button class="btn-eliminar" onclick="eliminarLibro(${index})">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 6h18"></path>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    }
-  });
-}
-
-// Inicializar el sistema de inventario
-document.addEventListener('DOMContentLoaded', function() {
-  // Event listeners para los botones de inventario
-  document.getElementById('btn-agregar-libro').addEventListener('click', () => mostrarModalLibro());
-  document.getElementById('buscar-libro').addEventListener('input', actualizarTablaLibros);
-  document.getElementById('filtro-busqueda').addEventListener('change', actualizarTablaLibros);
-  
-  // Event listener para el formulario de libro
-  document.getElementById('libro-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    guardarLibro();
-  });
-
-  // Event listener para cerrar el modal
-  document.querySelector('#libro-modal .close').addEventListener('click', () => {
-    document.getElementById('libro-modal').style.display = 'none';
-  });
-
-  // Event listener para cerrar el modal al hacer clic fuera
-  window.addEventListener('click', (e) => {
-    const modal = document.getElementById('libro-modal');
-    if (e.target === modal) {
-      modal.style.display = 'none';
-    }
-  });
-});
 

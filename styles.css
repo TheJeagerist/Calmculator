@@ -270,6 +270,10 @@ body.theme-oscuro #bg-wrap-oscuro {
       --radius: 20px;
       --transition: 0.3s ease;
       font-family: 'Poppins', sans-serif;
+      --word-counter-bg: #ffffff;
+      --word-counter-text: #333333;
+      --word-counter-hover: #f0f0f0;
+      --word-counter-border: #dddddd;
     }
     body.theme-light {
   --bg-gradient: linear-gradient(45deg, #f7f8fa, #e3e3ee, #fff7e6, #f1f5fb);
@@ -4098,17 +4102,272 @@ body.theme-oscuro .inventario-container h2 {
   color: #f44336;
 }
 
+.evento-ceremonia {
+    background-color: #9c27b0;
+    color: white;
+}
 
+/* Eliminando todas las secciones relacionadas con el inventario */
 
+/* Manteniendo los estilos del tema */
+:root {
+    
+}
 
+#word-counter-panel {
+    display: none;
+    max-width: 900px;
+    margin: 40px auto 0 auto;
+}
 
+#word-counter-panel.visible {
+    display: block;
+}
 
+.word-counter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
 
+.word-counter-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--word-counter-text);
+}
 
+.word-counter-content {
+    padding: 20px;
+    background: var(--word-counter-bg);
+    border-radius: 8px;
+    border: 1px solid var(--word-counter-border);
+}
 
+.word-counter-text {
+    line-height: 1.6;
+}
 
-  
+.word-counter-text span {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
 
+.word-counter-text span:hover {
+    background-color: var(--word-counter-hover);
+}
 
+.word-counter-text span.selected {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
 
+.word-counter-text span.double-clicked {
+    color: #ff0000;
+    font-weight: bold;
+}
 
+.word-counter-stats {
+    margin-top: 20px;
+    padding: 15px;
+    background: var(--word-counter-hover);
+    border-radius: 8px;
+}
+
+.word-counter-stats p {
+    margin: 8px 0;
+    font-size: 1.1em;
+}
+
+.error-count {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+#error-percentage {
+    color: #ff5722;
+    font-weight: bold;
+}
+
+.file-upload-area {
+    border: 2px dashed var(--word-counter-border);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.file-upload-area:hover {
+    border-color: #1976d2;
+}
+
+#file-input {
+    display: none;
+}
+
+body.theme-dark #word-counter-panel {
+    background: #1a1a1a;
+    --word-counter-bg: #2d2d2d;
+    --word-counter-text: #ffffff;
+    --word-counter-hover: #3d3d3d;
+    --word-counter-border: #404040;
+}
+
+body.theme-light #word-counter-panel {
+    --word-counter-bg: #ffffff;
+    --word-counter-text: #333333;
+    --word-counter-hover: #f0f0f0;
+    --word-counter-border: #dddddd;
+}
+
+body.theme-rosa #word-counter-panel {
+    --word-counter-bg: #fff0f3;
+    --word-counter-text: #4a4a4a;
+    --word-counter-hover: #ffe6eb;
+    --word-counter-border: #ffccd5;
+}
+
+body.theme-oscuro #word-counter-panel {
+    background: #2c3e50;
+    --word-counter-bg: #34495e;
+    --word-counter-text: #ecf0f1;
+    --word-counter-hover: #465c71;
+    --word-counter-border: #576c7d;
+}
+
+@media (max-width: 768px) {
+    #word-counter-panel {
+        max-width: 100%;
+    }
+    
+    .word-counter-header h2 {
+        font-size: 1.2rem;
+    }
+}
+
+.students-panel {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--word-counter-bg);
+    border-radius: 8px;
+    border: 1px solid var(--word-counter-border);
+}
+
+.students-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    padding: 12px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.students-controls button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 120px;
+    justify-content: center;
+    height: 32px;
+    color: white;
+}
+
+.btn-primary {
+    background: var(--add-ramo-btn-bg);
+    color: var(--add-ramo-btn-text);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--add-ramo-btn-hover);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: var(--btn-calc);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: var(--btn-calc-hover);
+    transform: translateY(-2px);
+}
+
+.btn-export {
+    background: var(--btn-reset);
+    color: white;
+}
+
+.btn-export:hover:not(:disabled) {
+    background: var(--btn-reset-hover);
+    transform: translateY(-2px);
+}
+
+.btn-download {
+    background: #9814f0;
+    color: white;
+}
+
+.btn-download:hover:not(:disabled) {
+    background: hwb(283 2% 50%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(152, 20, 240, 0.3);
+}
+
+.students-controls button:disabled {
+    background: var(--disabled-bg) !important;
+    color: var(--disabled-text) !important;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+    opacity: 0.7;
+}
+
+#student-select {
+    padding: 6px 12px;
+    height: 32px;
+    font-size: 0.85em;
+    min-width: 180px;
+}
+
+@media (max-width: 768px) {
+    .students-controls button {
+        padding: 6px 10px;
+        font-size: 0.8em;
+        width: calc(50% - 3px);
+        min-width: unset;
+        height: 30px;
+    }
+
+    #student-select {
+        width: 100%;
+        min-width: unset;
+        height: 30px;
+        padding: 4px 10px;
+    }
+}
+
+/* Ajustar el panel de información */
+.student-info {
+    margin-top: 12px;
+    padding: 10px 12px;
+}
+
+.student-info p {
+    font-size: 0.85em;
+}
+
+/* Mantener el resto de los estilos igual */
+// ... existing code ...
